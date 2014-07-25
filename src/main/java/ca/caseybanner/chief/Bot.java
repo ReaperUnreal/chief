@@ -38,18 +38,18 @@ public class Bot implements ChatManagerListener {
 	 * @param host
 	 * @param port
 	 */
-    public Bot(String username, String password, String host, int port) {
-
-        ConnectionConfiguration config = new ConnectionConfiguration(host, port);
-
+	public Bot(String username, String password, String host, int port) {
+		
+		ConnectionConfiguration config = new ConnectionConfiguration(host, port);
+		
 		this.username = username;
 		this.password = password;
 		
-		connection = new XMPPTCPConnection(config);               
+		connection = new XMPPTCPConnection(config);
 		lock = new ReentrantLock();
 		running = lock.newCondition();
 		
-    }
+	}
 	
 	/**
 	 * Tell the bot to shutdown. 
