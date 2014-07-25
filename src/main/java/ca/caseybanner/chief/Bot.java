@@ -93,7 +93,7 @@ public class Bot implements ChatManagerListener {
 			history.setMaxStanzas(0);
 			
 			muc.join("Chief Bot", "", history, SmackConfiguration.getDefaultPacketReplyTimeout());
-			muc.addMessageListener(new BotPacketListener());			
+			muc.addMessageListener(new BotRoomListener(this, muc));
 			
 		} catch (XMPPException e) {
 			throw new RuntimeException("XMPP Error", e);
