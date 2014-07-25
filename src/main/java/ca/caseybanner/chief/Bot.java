@@ -4,18 +4,23 @@ import java.io.IOException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ChatManager;
 import org.jivesoftware.smack.ChatManagerListener;
 import org.jivesoftware.smack.ConnectionConfiguration;
+import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
+import org.jivesoftware.smackx.muc.DiscussionHistory;
+import org.jivesoftware.smackx.muc.MultiUserChat;
 
 /**
  * Created by kcbanner on 7/24/2014.
@@ -85,16 +90,13 @@ public class Bot implements ChatManagerListener {
 			
 			// Join the rooms we are configured for
 			
-			/*			
 			MultiUserChat muc = new MultiUserChat(connection, "test@conference.localhost");
-			muc.join("Chief Bot");
 			
-			muc.addMessageListener(new PacketListener() {
-				public void processPacket(Packet packet) throws SmackException.NotConnectedException {
-					logger.trace("MUC Packet from: {}", packet.getFrom());
-				}				
-			});			
-			*/
+			DiscussionHistory history = new DiscussionHistory();
+			history.setMaxStanzas(0);
+			
+			muc.join("Chief Bot", "", history, SmackConfiguration.getDefaultPacketReplyTimeout());
+			muc.addMessageListener(new BotPacketListener());			
 			
 		} catch (XMPPException e) {
 			throw new RuntimeException("XMPP Error", e);
@@ -115,9 +117,7 @@ public class Bot implements ChatManagerListener {
 		try {		
 			running.await();			
 			connection.disconnect();
-		} catch (InterruptedException ex) {
-			
-		} catch (SmackException.NotConnectedException ex) {
+		} catch (InterruptedException | SmackException.NotConnectedException ex) {
 			
 		} finally {
 			lock.unlock();

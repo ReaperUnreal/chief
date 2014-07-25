@@ -26,8 +26,16 @@ public class BotMessageListener implements MessageListener {
 		this.bot = bot;
 	}
 
+	/**
+	 *
+	 * @param chat
+	 * @param message
+	 */
+	@Override
 	public void processMessage(Chat chat, Message message) {		
 		logger.trace("Message from `{}`: {}", chat.getParticipant(), message.getBody());
+		
+		// TODO: Pass actions 
 		
 		if (message.getBody().equals("!exit")) {
 			bot.exit();
