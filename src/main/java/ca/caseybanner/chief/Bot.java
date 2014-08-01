@@ -1,10 +1,17 @@
 package ca.caseybanner.chief;
 
+import ca.caseybanner.chief.commands.HelpCommmand;
+import ca.caseybanner.chief.commands.QuitCommand;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
@@ -14,7 +21,6 @@ import org.jivesoftware.smack.ChatManager;
 import org.jivesoftware.smack.ChatManagerListener;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.MessageListener;
-import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
@@ -40,12 +46,15 @@ public class Bot implements ChatManagerListener, MessageListener {
 	private final String username;
 	private final String password;
 	private final String conferenceHost;
-	private final String nickname;
+	private final String nickname;	
 
 	private final Pattern JID_PATTERN = Pattern.compile("^\\d+_");
-	
+
 	private final ConcurrentHashMap<String, Chat> chatsByParticpant;
 	private final ConcurrentHashMap<String, MultiUserChat> multiUserChatsByRoom;
+	
+	private final List<Command> commands;
+	
 
 	/**
 	 * Bot constructor
@@ -68,16 +77,32 @@ public class Bot implements ChatManagerListener, MessageListener {
 		
 		chatsByParticpant = new ConcurrentHashMap<>();
 		multiUserChatsByRoom = new ConcurrentHashMap<>();		
-		connection = new XMPPTCPConnection(config);
+		connection = new XMPPTCPConnection(config);		
 		
 		lock = new ReentrantLock();
 		running = lock.newCondition();
+
+		commands = new ArrayList<>();		
+		
+		// Add some default commands
+		
+		commands.add(new QuitCommand(this));
+		commands.add(new HelpCommmand(this));
 		
 		// TODO: Create some command processor thing
 		// 1. Save quotes
 		// 2. Watch for pull requests (allow people to subscribe)
-		// 3. Get random gif (once per hour per user)		
+		// 3. Get random gif (once per hour per user)
 		
+	}
+	
+	/**
+	 * Getter for the list of commands.
+	 * 
+	 * @return 
+	 */
+	public List<Command> getCommands() {
+		return Collections.unmodifiableList(commands);
 	}
 	
 	/**
@@ -210,6 +235,65 @@ public class Bot implements ChatManagerListener, MessageListener {
 		
 		chatsByParticpant.put(chat.getParticipant(), chat);
 		
+	}		
+	
+	/**
+	 * Process a message and return an optional response
+	 * 
+	 * @param from
+	 * @param message
+	 * @return 
+	 */
+	public Optional<String> handleMessage(String from, Message message, boolean fromRoom) {
+		
+		// TODO: Do some processing on the user and pass metadata to commands
+		
+		String body = message.getBody();		
+		for (Command command : commands) {
+			
+			// Return the result of the first matching command
+			
+			if (command.getPattern().matcher(body).matches()) {
+				return command.processMessage(from, message.getBody());
+			}
+		}
+		
+		// No commands matched
+		
+		if (! fromRoom) {
+			return Optional.of("I didn't understand that. Type `help` for usage information.");			
+		}
+		
+		return Optional.empty();
+		
+	}
+	
+	/**
+	 * Send a message to a chat
+	 * 
+	 * @param chat
+	 * @param message 
+	 */
+	private void sendMessage(Chat chat, String message) {
+		try {
+			chat.sendMessage(message);
+		} catch (XMPPException | SmackException.NotConnectedException ex) {
+			logger.error("Error sending message to {}", chat.getParticipant(), ex);
+		}
+	}
+
+	/**
+	 * Send a message to a multi user chat
+	 * 
+	 * @param chat
+	 * @param message 
+	 */
+	private void sendMessage(MultiUserChat chat, String message) {
+		try {
+			chat.sendMessage(message);
+		} catch (XMPPException | SmackException.NotConnectedException ex) {
+			logger.error("Error sending message to room {}", chat.getNickname(), ex);
+		}
 	}
 	
 	/**
@@ -219,12 +303,14 @@ public class Bot implements ChatManagerListener, MessageListener {
 	 */
 	@Override
 	public void processMessage(Chat chat, Message message) {		
-		logger.trace("Message from `{}`: {}", chat.getParticipant(), message.getBody());
-		
-		// TODO: Pass actions 
-		
-		if (message.getBody().equals("!exit")) {
-			exit();
+
+		if (message.getBody() != null) {		
+			logger.trace("Message from `{}`: {}", chat.getParticipant(), message.getBody());
+			Optional<String> response = handleMessage(chat.getParticipant(), message, false);
+
+			response.ifPresent(responseString -> {
+				sendMessage(chat, responseString);		
+			});
 		}
 		
 	}
@@ -233,7 +319,12 @@ public class Bot implements ChatManagerListener, MessageListener {
 	
 		if (packet instanceof Message) {
 			Message message = (Message) packet;
-			logger.trace("MUC Message {}: {}", message.getFrom(), message.getBody());			
+			logger.trace("MUC Message {}: {}", message.getFrom(), message.getBody());	
+			Optional<String> response = handleMessage(message.getFrom(), message, true);			
+			
+			response.ifPresent(responseString -> {
+				sendMessage(chat, responseString);		
+			});
 		} else if (packet instanceof Presence) {
 			Presence presence = (Presence) packet;
 			logger.trace("MUC Presence {}: {}", chat.getRoom(), presence.getType().toString());						

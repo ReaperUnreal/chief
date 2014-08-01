@@ -16,7 +16,7 @@ public class Chief {
 		
 		logger.info("Chief is starting");
 		
-		Bot bot = new Bot("Chief Bot", "bot", "test", "localhost", "conference.localhost", 5222);
+		Bot bot = new Bot("Chief Bot", "bot", "test", "localhost", "conference.localhost", 5222);		
 		bot.start();			
 		bot.waitForExit();
 
