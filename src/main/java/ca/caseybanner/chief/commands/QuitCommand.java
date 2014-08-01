@@ -9,6 +9,7 @@ package ca.caseybanner.chief.commands;
 import ca.caseybanner.chief.Bot;
 import ca.caseybanner.chief.Command;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -34,9 +35,8 @@ public class QuitCommand extends Command {
 	}
 
 	@Override
-	public Optional<String> processMessage(String from, String message) {		
-		getBot().exit();
-		
+	public Optional<String> processMessage(String from, String message, Matcher matcher) {		
+		getBot().exit();		
 		return Optional.empty();
 	}
 	

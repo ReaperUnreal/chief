@@ -8,6 +8,7 @@ package ca.caseybanner.chief.commands;
 
 import ca.caseybanner.chief.Bot;
 import ca.caseybanner.chief.Command;
+import com.google.api.services.youtube.YouTube;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,18 +17,28 @@ import java.util.regex.Pattern;
  *
  * @author kcbanner
  */
-public class HelpCommmand extends Command {
+public class YouTubeCommand extends Command {
+
+	private static final Pattern PATTERN = Pattern.compile("^youtube\\s+(.+)$");
+
+	private YouTube youtube;		
+	private String apiKey;
 	
-	private static final Pattern PATTERN = Pattern.compile("^help");
-	private static final String USAGE_HEADER = "Chief Bot Usage:\n";
-	
-	public HelpCommmand(Bot bot) {
+	public YouTubeCommand(Bot bot) {
 		super(bot);
 	}
 
+	/**
+	 * Setter for apiKey
+	 * @param apiKey 
+	 */
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}	
+	
 	@Override
 	public String getUsage() {
-		return "help - displays usage information";
+		return "youtube <query> - searches youtube and returns the first result for <query>";
 	}
 
 	@Override
@@ -37,15 +48,13 @@ public class HelpCommmand extends Command {
 
 	@Override
 	public Optional<String> processMessage(String from, String message, Matcher matcher) {
-		final StringBuilder builder = new StringBuilder(USAGE_HEADER);		
 		
-		getBot().getCommands().stream().forEach(command -> {
-			builder.append(command.getUsage());
-			builder.append("\n");
-		});
+		String query = matcher.group(1);
 		
-		return Optional.of(builder.toString());
+		
+		
+		return Optional.empty();
+		
 	}
-	
 	
 }

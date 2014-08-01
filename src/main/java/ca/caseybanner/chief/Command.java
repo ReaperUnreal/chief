@@ -7,6 +7,7 @@
 package ca.caseybanner.chief;
 
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -49,13 +50,15 @@ public abstract class Command {
 	 */
 	public abstract Pattern getPattern();
 	
+
 	/**
-	 * Process a message and optionally return a response.
+	 * Process a message and optionally return a response. 
 	 * 
 	 * @param from
 	 * @param message
+	 * @param matcher
 	 * @return 
 	 */
-	public abstract Optional<String> processMessage(String from, String message);
+	public abstract Optional<String> processMessage(String from, String message, Matcher matcher);
 	
 }

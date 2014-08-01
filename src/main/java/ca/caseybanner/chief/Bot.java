@@ -2,15 +2,25 @@ package ca.caseybanner.chief;
 
 import ca.caseybanner.chief.commands.HelpCommmand;
 import ca.caseybanner.chief.commands.QuitCommand;
+import ca.caseybanner.chief.commands.YouTubeCommand;
+import com.google.api.services.youtube.YouTube;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,26 +64,28 @@ public class Bot implements ChatManagerListener, MessageListener {
 	private final ConcurrentHashMap<String, MultiUserChat> multiUserChatsByRoom;
 	
 	private final List<Command> commands;
-	
+	private final Properties properties;
 
 	/**
 	 * Bot constructor
 	 * 
-	 * @param nickname
-	 * @param username
-	 * @param password
-	 * @param host
-	 * @param conferenceHost
-	 * @param port
+	 * @param properties 
 	 */
-	public Bot(String nickname, String username, String password, String host, String conferenceHost, int port) {
+	public Bot(Properties properties) {
+		
+		this.properties = properties;
+		
+		// TODO: Throw errors when required properties are missing
+		
+		String host = properties.getProperty("host");
+		int port = Integer.parseInt(properties.getProperty("port"));
 		
 		ConnectionConfiguration config = new ConnectionConfiguration(host, port);
 		
-		this.nickname = nickname;
-		this.username = username;
-		this.password = password;
-		this.conferenceHost = conferenceHost;
+		this.nickname = properties.getProperty("nickname", "Chief Bot");		
+		this.username = properties.getProperty("username");
+		this.password = properties.getProperty("password");	
+		this.conferenceHost = properties.getProperty("conferenceHost");
 		
 		chatsByParticpant = new ConcurrentHashMap<>();
 		multiUserChatsByRoom = new ConcurrentHashMap<>();		
@@ -89,10 +101,72 @@ public class Bot implements ChatManagerListener, MessageListener {
 		commands.add(new QuitCommand(this));
 		commands.add(new HelpCommmand(this));
 		
+		// TODO: Load plugins based on properties file
+		
+		addCommand(YouTubeCommand::new);
+		
 		// TODO: Create some command processor thing
 		// 1. Save quotes
 		// 2. Watch for pull requests (allow people to subscribe)
 		// 3. Get random gif (once per hour per user)
+		
+	}
+	
+	/**
+	 * Constructs and adds a command
+	 * 
+	 * @param commandConstructor 
+	 */
+	private void addCommand(Function<Bot, Command> commandConstructor) {
+		
+		Command command = commandConstructor.apply(this);
+
+		// Load any properties prefixed with this classname and apply them
+		
+		String typeName = command.getClass().getTypeName();	
+		properties.stringPropertyNames().stream().filter(propertyName -> {
+			
+			// Filter properties that are prefixed with the full type name,
+			// a period, and then at least one character
+			
+			return propertyName.indexOf(typeName) == 0 && 
+					propertyName.length() > typeName.length() + 1 &&
+					propertyName.charAt(typeName.length()) == '.';
+		}).forEach(propertyName -> {			
+			String fieldName = propertyName.substring(typeName.length() + 1);
+			
+			// Construct the name of the setter for this field
+			
+			StringBuilder setterNameBuilder = new StringBuilder("set");
+			setterNameBuilder.append(fieldName.substring(0, 1).toUpperCase());				
+			if (fieldName.length() > 1) {			
+				setterNameBuilder.append(fieldName.substring(1));
+			}
+			
+			String setterName = setterNameBuilder.toString();
+			
+			try {				
+				
+				// Call the setter with the property value
+				
+				Method method = command.getClass().getMethod(setterName, String.class);
+				method.invoke(command, properties.getProperty(propertyName));
+			} catch (NoSuchMethodException | SecurityException ex) {
+				logger.error(
+					"Could not find configuration setter {} on {}",
+					setterName,
+					command.getClass().getTypeName());				
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+				logger.error(
+					"Error calling configuration setter {} on {}",
+					setterName,
+					command.getClass().getTypeName(),
+					ex);				
+			}
+			
+		});
+				
+				
 		
 	}
 	
@@ -253,12 +327,13 @@ public class Bot implements ChatManagerListener, MessageListener {
 			
 			// Return the result of the first matching command
 			
-			if (command.getPattern().matcher(body).matches()) {
-				return command.processMessage(from, message.getBody());
+			Matcher matcher = command.getPattern().matcher(body);
+			if (matcher.matches()) {
+				return command.processMessage(from, message.getBody(), matcher);
 			}
 		}
 		
-		// No commands matched
+		// No commands matched, if this is a single user chat then help them out
 		
 		if (! fromRoom) {
 			return Optional.of("I didn't understand that. Type `help` for usage information.");			
