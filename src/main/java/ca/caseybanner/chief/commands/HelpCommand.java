@@ -16,12 +16,12 @@ import java.util.regex.Pattern;
  *
  * @author kcbanner
  */
-public class HelpCommmand extends Command {
+public class HelpCommand extends Command {
 	
 	private static final Pattern PATTERN = Pattern.compile("^help");
 	private static final String USAGE_HEADER = "Chief Bot Usage:\n";
 	
-	public HelpCommmand(Bot bot) {
+	public HelpCommand(Bot bot) {
 		super(bot);
 	}
 

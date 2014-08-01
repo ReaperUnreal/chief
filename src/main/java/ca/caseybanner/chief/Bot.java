@@ -1,6 +1,6 @@
 package ca.caseybanner.chief;
 
-import ca.caseybanner.chief.commands.HelpCommmand;
+import ca.caseybanner.chief.commands.HelpCommand;
 import ca.caseybanner.chief.commands.QuitCommand;
 import ca.caseybanner.chief.commands.YouTubeCommand;
 import com.google.api.services.youtube.YouTube;
@@ -98,11 +98,10 @@ public class Bot implements ChatManagerListener, MessageListener {
 		
 		// Add some default commands
 		
-		commands.add(new QuitCommand(this));
-		commands.add(new HelpCommmand(this));
-		
 		// TODO: Load plugins based on properties file
 		
+		addCommand(HelpCommand::new);
+		addCommand(QuitCommand::new);
 		addCommand(YouTubeCommand::new);
 		
 		// TODO: Create some command processor thing
@@ -162,11 +161,12 @@ public class Bot implements ChatManagerListener, MessageListener {
 					setterName,
 					command.getClass().getTypeName(),
 					ex);				
-			}
-			
+			}			
 		});
-				
-				
+			
+		// TODO: Call some method saying we are done configuring?
+		
+		commands.add(command);
 		
 	}
 	
