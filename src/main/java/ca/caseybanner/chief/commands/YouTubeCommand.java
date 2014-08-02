@@ -32,7 +32,7 @@ public class YouTubeCommand extends Command {
 	private static final Logger logger = LogManager.getLogger(YouTubeCommand.class);
 
 	private static final Pattern PATTERN = Pattern.compile("^youtube\\s+(.+)$");
-	private YouTube youtube;	
+	private final YouTube youtube;	
 	private String apiKey;
 	
 	public YouTubeCommand(Bot bot) {

@@ -3,10 +3,7 @@ package ca.caseybanner.chief;
 import ca.caseybanner.chief.commands.HelpCommand;
 import ca.caseybanner.chief.commands.QuitCommand;
 import ca.caseybanner.chief.commands.YouTubeCommand;
-import com.google.api.services.youtube.YouTube;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -18,24 +15,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jivesoftware.smack.Chat;
-import org.jivesoftware.smack.ChatManager;
-import org.jivesoftware.smack.ChatManagerListener;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
@@ -46,7 +40,7 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
 /**
  * Created by kcbanner on 7/24/2014.
  */
-public class Bot implements ChatManagerListener, MessageListener {
+public class Bot implements MessageListener {
 
 	private static final Logger logger = LogManager.getLogger(Bot.class);
 	
@@ -56,15 +50,13 @@ public class Bot implements ChatManagerListener, MessageListener {
 	private final String username;
 	private final String password;
 	private final String conferenceHost;
-	private final String nickname;	
+	private final String nickname;
 
-	private final Pattern JID_PATTERN = Pattern.compile("^\\d+_");
-
-	private final ConcurrentHashMap<String, Chat> chatsByParticpant;
 	private final ConcurrentHashMap<String, MultiUserChat> multiUserChatsByRoom;
 	
 	private final List<Command> commands;
 	private final Properties properties;
+	private final Pattern roomPrefixPattern;
 
 	/**
 	 * Bot constructor
@@ -72,7 +64,10 @@ public class Bot implements ChatManagerListener, MessageListener {
 	 * @param properties 
 	 */
 	public Bot(Properties properties) {
-		
+
+		lock = new ReentrantLock();
+		running = lock.newCondition();
+
 		this.properties = properties;
 		
 		// TODO: Throw errors when required properties are missing
@@ -85,29 +80,33 @@ public class Bot implements ChatManagerListener, MessageListener {
 		this.nickname = properties.getProperty("nickname", "Chief Bot");		
 		this.username = properties.getProperty("username");
 		this.password = properties.getProperty("password");	
-		this.conferenceHost = properties.getProperty("conferenceHost");
+		this.conferenceHost = properties.getProperty("conferenceHost");		
+		this.roomPrefixPattern = Pattern.compile(properties.getProperty(
+				"roomPrefix", "^!\\s*"));
 		
-		chatsByParticpant = new ConcurrentHashMap<>();
 		multiUserChatsByRoom = new ConcurrentHashMap<>();		
+		
 		connection = new XMPPTCPConnection(config);		
 		
-		lock = new ReentrantLock();
-		running = lock.newCondition();
-
-		commands = new ArrayList<>();		
+		// Add a packet listener for IQ packets
 		
+		connection.addPacketListener((Packet packet) -> {
+			processIQPacket((IQ) packet);
+		}, (Packet packet) -> {
+
+			// Filter IQ packets			
+			return packet instanceof IQ;	
+			
+		});
+
 		// Add some default commands
 		
-		// TODO: Load plugins based on properties file
+		commands = new ArrayList<>();		
 		
+		// TODO: Load plugins based on properties file		
 		addCommand(HelpCommand::new);
 		addCommand(QuitCommand::new);
 		addCommand(YouTubeCommand::new);
-		
-		// TODO: Create some command processor thing
-		// 1. Save quotes
-		// 2. Watch for pull requests (allow people to subscribe)
-		// 3. Get random gif (once per hour per user)
 		
 	}
 	
@@ -193,12 +192,9 @@ public class Bot implements ChatManagerListener, MessageListener {
 			// Roster setup
 			
 			Roster roster = connection.getRoster();
-			roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all);
+			roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all);		
 			
-			ChatManager chatManager = ChatManager.getInstanceFor(connection);
-			chatManager.addChatListener(this);		
-			
-			joinRoom("test");
+			joinRoom("149422_test");
 			
 		} catch (XMPPException e) {
 			throw new RuntimeException("XMPP Error", e);
@@ -241,17 +237,6 @@ public class Bot implements ChatManagerListener, MessageListener {
 		
 	}
 
-	/**
-	 * Returns if a name looks like a HipChat JID
-	 * 
-	 * @param name
-	 * @return 
-	 */
-	private boolean isHipchatJID(String name) {
-		Matcher matcher = JID_PATTERN.matcher(name);
-		return matcher.matches();
-	}
-	
 	/**
 	 * Join a room
 	 * 
@@ -296,41 +281,68 @@ public class Bot implements ChatManagerListener, MessageListener {
 	}
 	
 	/**
-	 * Called when a new chat is created with the bot
 	 * 
-	 * @param chat
-	 * @param createdLocally 
+	 * 
+	 * @param packet 
 	 */
-	@Override
-	public void chatCreated(Chat chat, boolean createdLocally) {
+	private void processIQPacket(IQ packet) {
 		
-		logger.trace("Chat started with: {}", chat.getParticipant());
-		chat.addMessageListener(this);
+		logger.trace("IQ: {}", packet.toXML());
 		
-		chatsByParticpant.put(chat.getParticipant(), chat);
-		
-	}		
+	}
 	
 	/**
 	 * Process a message and return an optional response
 	 * 
-	 * @param from
+	 * @param fromJID the JID this message was from
 	 * @param message
+	 * @param fromRoom
 	 * @return 
 	 */
-	public Optional<String> handleMessage(String from, Message message, boolean fromRoom) {
+	private Optional<String> handleMessage(String fromJID, Message message, boolean fromRoom) {
 		
-		// TODO: Do some processing on the user and pass metadata to commands
-		
-		String body = message.getBody();		
-		for (Command command : commands) {
+		// TODO: Ignore messages from ourselves (like posting things to a room we are in)
+
+		String body = message.getBody();
+		if (body != null) {
+			Optional<String> response = Optional.empty();
 			
-			// Return the result of the first matching command
+			// Room messages require a prefix to be processed. 
+			// Check for it, then remove it before passing the message to the command.			
 			
-			Matcher matcher = command.getPattern().matcher(body);
-			if (matcher.matches()) {
-				return command.processMessage(from, message.getBody(), matcher);
+			if (fromRoom) {						
+				Matcher prefixMatcher = roomPrefixPattern.matcher(body);
+				if (prefixMatcher.find()&& prefixMatcher.end() < body.length()) {
+					body = body.substring(prefixMatcher.end());
+				} else {					
+					return Optional.empty();
+				}
+			}			
+			
+			for (Command command : commands) {
+
+				// Return the result of the first matching command
+
+				Matcher matcher = command.getPattern().matcher(body);
+				if (matcher.matches()) {
+					response = command.processMessage(fromJID, message.getBody(), matcher);
+					break;
+				}
 			}
+			
+			// If this a response back to a room, prefix it with the username that sent the command
+			
+			if (fromRoom && response.isPresent()) {
+				
+				// In MUCs, the resource is the nickname
+				
+				String fromNickname = fromJID.split("/")[1];
+				response = Optional.of(
+						"@" + nicknameToMentionName(fromNickname)+  " " + response.get());
+				
+			}			
+			
+			return response;
 		}
 		
 		// No commands matched, if this is a single user chat then help them out
@@ -341,6 +353,52 @@ public class Bot implements ChatManagerListener, MessageListener {
 		
 		return Optional.empty();
 		
+	}
+	
+	/**
+	 * Convert a user's JID to a nickname using the roster.
+	 * This does not work for JIDs from MUCs.
+	 * 
+	 * @param jid
+	 * @return 
+	 */
+	private String jidToNickname(String jid) {
+		String withoutResource = XMPP.getPlainJID(jid);
+		
+        for (RosterEntry r : connection.getRoster().getEntries()) {			
+			if (r.getUser().equals(withoutResource)) {
+				return r.getName();
+			}
+        }
+
+		return jid;
+	}
+	
+	/**
+	 * Converts a nickname to a JID by looking it up in the roster.
+	 * 
+	 * @param nickname
+	 * @return 
+	 */
+	private String nicknameToJID(String nickname) {	
+        for (RosterEntry r : connection.getRoster().getEntries()) {
+            if (r.getName().equals(nickname))
+                return r.getUser();
+        }
+		
+        return nickname;
+    }
+	
+	/**
+	 * Attempts to convert a nickname to a HipChat mention name
+	 * 
+	 * @param nickname
+	 * @return 
+	 */
+	private Optional<String> nicknameToMentionName(String nickname) {
+		
+		
+		return Optional.empty();		
 	}
 	
 	/**
@@ -379,10 +437,11 @@ public class Bot implements ChatManagerListener, MessageListener {
 	@Override
 	public void processMessage(Chat chat, Message message) {		
 
-		if (message.getBody() != null) {		
+		if (message.getBody() != null) {
 			logger.trace("Message from `{}`: {}", chat.getParticipant(), message.getBody());
-			Optional<String> response = handleMessage(chat.getParticipant(), message, false);
 
+			Optional<String> response = handleMessage(chat.getParticipant(), message, false);
+			
 			response.ifPresent(responseString -> {
 				sendMessage(chat, responseString);		
 			});
@@ -391,18 +450,24 @@ public class Bot implements ChatManagerListener, MessageListener {
 	}
 	
 	private void processRoomMessage(MultiUserChat chat, Packet packet) {
-	
 		if (packet instanceof Message) {
 			Message message = (Message) packet;
-			logger.trace("MUC Message {}: {}", message.getFrom(), message.getBody());	
-			Optional<String> response = handleMessage(message.getFrom(), message, true);			
+			logger.trace("MUC Message `{}`: {}", jidToNickname(message.getFrom()), message.getBody());
 			
-			response.ifPresent(responseString -> {
-				sendMessage(chat, responseString);		
-			});
+			// In rooms, the JID is room@domain/nickname
+			// Messages not send by a user won't have a resource.
+			
+			String fromJID = message.getFrom();
+			if (fromJID.contains("/")) {	
+				Optional<String> response = handleMessage(fromJID, message, true);			
+
+				response.ifPresent(responseString -> {
+					sendMessage(chat, responseString);		
+				});
+			}			
 		} else if (packet instanceof Presence) {
 			Presence presence = (Presence) packet;
-			logger.trace("MUC Presence {}: {}", chat.getRoom(), presence.getType().toString());						
+			logger.trace("MUC Presence `{}`: {}", chat.getRoom(), presence.getType().toString());						
 		} else {
 			logger.trace("MUC Packet:", packet.toXML());			
 		}

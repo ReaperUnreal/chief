@@ -54,7 +54,7 @@ public abstract class Command {
 	/**
 	 * Process a message and optionally return a response. 
 	 * 
-	 * @param from
+	 * @param from the nickname the chat was from
 	 * @param message
 	 * @param matcher
 	 * @return 

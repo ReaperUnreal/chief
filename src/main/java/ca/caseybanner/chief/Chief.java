@@ -15,8 +15,6 @@ public class Chief {
 	private static final String PROPERTIES_FILENAME = "chief.properties";
 	
     public static void main(String[] args) {
-
-		// TODO: Load a configuration file
 		
 		logger.info("Chief is starting");
 		
