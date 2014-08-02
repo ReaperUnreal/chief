@@ -1,6 +1,7 @@
 package ca.caseybanner.chief;
 
 import ca.caseybanner.chief.commands.HelpCommand;
+import ca.caseybanner.chief.commands.LCBOCommand;
 import ca.caseybanner.chief.commands.QuitCommand;
 import ca.caseybanner.chief.commands.YouTubeCommand;
 import java.io.IOException;
@@ -21,6 +22,8 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.ChatManager;
+import org.jivesoftware.smack.ChatManagerListener;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.Roster;
@@ -29,7 +32,6 @@ import org.jivesoftware.smack.SmackConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
@@ -40,7 +42,7 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
 /**
  * Created by kcbanner on 7/24/2014.
  */
-public class Bot implements MessageListener {
+public class Bot implements ChatManagerListener, MessageListener {
 
 	private static final Logger logger = LogManager.getLogger(Bot.class);
 	
@@ -87,17 +89,6 @@ public class Bot implements MessageListener {
 		multiUserChatsByRoom = new ConcurrentHashMap<>();		
 		
 		connection = new XMPPTCPConnection(config);		
-		
-		// Add a packet listener for IQ packets
-		
-		connection.addPacketListener((Packet packet) -> {
-			processIQPacket((IQ) packet);
-		}, (Packet packet) -> {
-
-			// Filter IQ packets			
-			return packet instanceof IQ;	
-			
-		});
 
 		// Add some default commands
 		
@@ -107,6 +98,7 @@ public class Bot implements MessageListener {
 		addCommand(HelpCommand::new);
 		addCommand(QuitCommand::new);
 		addCommand(YouTubeCommand::new);
+		addCommand(LCBOCommand::new);
 		
 	}
 	
@@ -188,7 +180,10 @@ public class Bot implements MessageListener {
 			connection.login(username, password, "Chief Bot");
 			
 			logger.info("Bot online: connected to domain {}", connection.getConnectionID());
-	
+
+            ChatManager chatManager = ChatManager.getInstanceFor(connection);
+            chatManager.addChatListener(this);        
+
 			// Roster setup
 			
 			Roster roster = connection.getRoster();
@@ -281,17 +276,6 @@ public class Bot implements MessageListener {
 	}
 	
 	/**
-	 * 
-	 * 
-	 * @param packet 
-	 */
-	private void processIQPacket(IQ packet) {
-		
-		logger.trace("IQ: {}", packet.toXML());
-		
-	}
-	
-	/**
 	 * Process a message and return an optional response
 	 * 
 	 * @param fromJID the JID this message was from
@@ -338,7 +322,7 @@ public class Bot implements MessageListener {
 				
 				String fromNickname = fromJID.split("/")[1];
 				response = Optional.of(
-						"@" + nicknameToMentionName(fromNickname)+  " " + response.get());
+						"@" + nicknameToMentionName(fromNickname) +  " " + response.get());
 				
 			}			
 			
@@ -390,15 +374,17 @@ public class Bot implements MessageListener {
     }
 	
 	/**
-	 * Attempts to convert a nickname to a HipChat mention name
+	 * Attempts to convert a nickname to a HipChat mention name.
+	 * For now, this just removes all spaces. This works for most HipChat 
+	 * names, unlesss the user has a set a custom name. Since Smack can't parse
+	 * out the `mention_name` attribute in the `<item>` tag inside the roster
+	 * <query>, this is good enough.
 	 * 
 	 * @param nickname
 	 * @return 
 	 */
-	private Optional<String> nicknameToMentionName(String nickname) {
-		
-		
-		return Optional.empty();		
+	private String nicknameToMentionName(String nickname) {
+		return nickname.replaceAll("\\s", "");
 	}
 	
 	/**
@@ -428,6 +414,20 @@ public class Bot implements MessageListener {
 			logger.error("Error sending message to room {}", chat.getNickname(), ex);
 		}
 	}
+	
+	/**
+     * Called when a new chat is created with the bot
+     * 
+     * @param chat
+     * @param createdLocally 
+     */
+    @Override
+    public void chatCreated(Chat chat, boolean createdLocally) {
+        
+        logger.trace("Chat started with: {}", chat.getParticipant());
+        chat.addMessageListener(this);
+        
+    }
 	
 	/**
 	 *
