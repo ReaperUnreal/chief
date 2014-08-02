@@ -129,7 +129,10 @@ public class LCBOCommand extends Command {
 		
 		@Key
 		Integer regular_price_in_cents;
-		
+
+		@Key
+		String style;
+				
 		@Override
 		public String toString() {
 			
@@ -146,6 +149,10 @@ public class LCBOCommand extends Command {
 					builder.append(" - ").append(secondary_category);
 				}
 				
+				if (! Data.isNull(style)) {
+					builder.append(" - ").append(style);
+				}
+				
 				builder.append("\n");
 			}				
 			
@@ -154,6 +161,9 @@ public class LCBOCommand extends Command {
 						.append((float) alcohol_content / 100.0)
 						.append("%\n");
 			}
+		
+			if (! Data.isNull(packaging))
+				builder.append("  Package: ").append(packaging).append("\n");			
 			
 			if (! Data.isNull(price_in_cents)) {
 				builder.append("  Price: $").append(price_in_cents / 100);
@@ -172,8 +182,6 @@ public class LCBOCommand extends Command {
 			if (! Data.isNull(producer_name))
 				builder.append("  Produced by: ").append(producer_name).append("\n");				
 			
-			if (! Data.isNull(packaging))
-				builder.append("  Package: ").append(packaging).append("\n");
 
 			if (! Data.isNull(inventory_count)) {
 				builder.append("  Total Inventory: ").append(inventory_count).append(" units");
@@ -186,6 +194,10 @@ public class LCBOCommand extends Command {
 				
 				builder.append("\n");
 			}
+			
+			builder.append("Store link: ")
+					.append("http://www.lcbo.com/lcbo/search?searchTerm=")
+					.append(id);
 			
 			return builder.toString();			
 		}
@@ -294,19 +306,15 @@ public class LCBOCommand extends Command {
 						builder.append("No picture for ").append(product.name);
 					}
 				} else {
-					builder.append("Results");
-
 					if (lcboResponse.results.size() > MAX_RESULTS) {
-						builder.append(" (")
+						builder.append("Results (")
 							.append(Integer.toString(lcboResponse.pager.total_record_count))
 							.append(" total results, limiting to ")
 							.append(Integer.toString(MAX_RESULTS))
-							.append(")");
+							.append("):\n");
 					}
 
-					builder.append(":");
 					lcboResponse.results.stream().limit(MAX_RESULTS).forEach(product -> {				
-						builder.append("\n");
 						builder.append(product);
 					});				
 				}
