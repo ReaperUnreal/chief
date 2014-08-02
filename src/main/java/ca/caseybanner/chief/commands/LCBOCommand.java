@@ -109,6 +109,13 @@ public class LCBOCommand extends Command {
 		@Key
 		String image_thumb_url;
 		
+		@Key
+		Integer inventory_count;
+		
+		@Key
+		Integer inventory_volume_in_milliliters;
+				
+		
 		@Override
 		public String toString() {
 			
@@ -122,9 +129,17 @@ public class LCBOCommand extends Command {
 			if (! Data.isNull(packaging))
 				builder.append("  Package: ").append(packaging).append("\n");
 
-			
-			
+			if (! Data.isNull(inventory_count)) {
+				builder.append("  Total Inventory: ").append(inventory_count).append(" units");
 				
+				if (! Data.isNull(inventory_volume_in_milliliters)) {
+					builder.append(" (")
+							.append(inventory_volume_in_milliliters / 1000)
+							.append(" litres)");
+				}
+				
+				builder.append("\n");
+			}
 			
 			return builder.toString();
 			
