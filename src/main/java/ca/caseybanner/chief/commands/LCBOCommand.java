@@ -33,7 +33,7 @@ public class LCBOCommand extends Command {
 	private static final Pattern PATTERN = Pattern.compile(
 			"^lcbo\\s+((?<picture>picture)|(?<taste>taste))?(?<query>.+)$");
 	
-	private static final int MAX_RESULTS = 3;
+	private static final int MAX_RESULTS = 1;
 	
 	private final JacksonFactory jsonFactory;
 	private final HttpRequestFactory requestFactory;
@@ -115,6 +115,20 @@ public class LCBOCommand extends Command {
 		@Key
 		Integer inventory_volume_in_milliliters;
 				
+		@Key
+		String primary_category;
+		
+		@Key
+		String secondary_category;
+		
+		@Key
+		Integer alcohol_content;
+		
+		@Key
+		Integer price_in_cents;
+		
+		@Key
+		Integer regular_price_in_cents;
 		
 		@Override
 		public String toString() {
@@ -124,8 +138,40 @@ public class LCBOCommand extends Command {
 			
 			if (! Data.isNull(origin))
 				builder.append("  From: ").append(origin).append("\n");
+			
+			if (! Data.isNull(primary_category)) {
+				builder.append("  Style: ").append(primary_category);
+				
+				if (! Data.isNull(secondary_category)) {
+					builder.append(" - ").append(secondary_category);
+				}
+				
+				builder.append("\n");
+			}				
+			
+			if (! Data.isNull(alcohol_content)) {
+				builder.append("  Alchohol content: ")
+						.append((float) alcohol_content / 100.0)
+						.append("%\n");
+			}
+			
+			if (! Data.isNull(price_in_cents)) {
+				builder.append("  Price: $").append(price_in_cents / 100);
+				
+				if (! Data.isNull(regular_price_in_cents) &&
+						regular_price_in_cents.compareTo(price_in_cents) != 0) {
+					
+					builder.append(" (regular $")
+							.append(regular_price_in_cents / 100)
+							.append(")");
+				}
+				
+				builder.append("\n");
+			}
+			
 			if (! Data.isNull(producer_name))
 				builder.append("  Produced by: ").append(producer_name).append("\n");				
+			
 			if (! Data.isNull(packaging))
 				builder.append("  Package: ").append(packaging).append("\n");
 
@@ -141,8 +187,7 @@ public class LCBOCommand extends Command {
 				builder.append("\n");
 			}
 			
-			return builder.toString();
-			
+			return builder.toString();			
 		}
 		
 		public boolean hasNotes() {
@@ -259,10 +304,10 @@ public class LCBOCommand extends Command {
 							.append(")");
 					}
 
-					builder.append(":\n");				
+					builder.append(":");
 					lcboResponse.results.stream().limit(MAX_RESULTS).forEach(product -> {				
-						builder.append(product);
 						builder.append("\n");
+						builder.append(product);
 					});				
 				}
 								
