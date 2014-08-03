@@ -31,7 +31,10 @@ public class LCBOCommand extends Command {
 	
 	private static final String BASE_URL = "http://lcboapi.com";
 	private static final Pattern PATTERN = Pattern.compile(
-			"^lcbo\\s+((?<picture>picture)|(?<taste>taste))?(?<query>.+)$");
+			"^lcbo\\s+((?<picture>picture)|(?<store>store)|(?<taste>taste))?(?<query>.+)$");
+	
+	private static final Pattern STORE_QUERY_PATTERN = Pattern.compile(
+			"\\s+at\\s+(?<storequery>.*)$");
 	
 	private static final int MAX_RESULTS = 1;
 	
@@ -212,7 +215,7 @@ public class LCBOCommand extends Command {
 		
 	}
 	
-	public static class LCBOResponse {
+	public static class LCBOProductResponse {
 		
 		@Key
 		int status;
@@ -230,6 +233,47 @@ public class LCBOCommand extends Command {
 		List<LCBOProduct> results;
 		
 	}
+
+	public static class LCBOStore {
+	
+		@Key
+		String name;
+		
+		@Key
+		String address_line_1;
+		
+		@Key
+		String address_line_2;
+		
+		@Key
+		String city;
+		
+		@Key
+		String telephone;
+		
+		@Key
+		Integer quantity;
+		
+	}
+	
+	public static class LCBOStoreResponse {
+		
+		@Key
+		int status;
+		
+		@Key	
+		String message;
+		
+		@Key
+		LCBOPager pager;
+		
+		@Key
+		LCBOProduct product;
+		
+		@Key("result")
+		List<LCBOStore> results;
+		
+	}
 	
 	public LCBOCommand(Bot bot) {
 		
@@ -244,7 +288,10 @@ public class LCBOCommand extends Command {
 	
 	@Override
 	public String getUsage() {
-		return "";
+		return "lcbo <query> - search for <query>\n" +
+				"lcbo picture <query> - show a picture of <query>\n" +
+				"lcbo taste <query> - tasting notes for <query>\n" +				
+				"lcbo store <query> [at <storequery>] - search stores that have <query>. Optionally narrow down the stores with <storequery>.";		
 	}
 
 	@Override
@@ -252,13 +299,7 @@ public class LCBOCommand extends Command {
 		return PATTERN;
 	}
 
-	@Override
-	public Optional<String> processMessage(String from, String message, Matcher matcher) {
-		
-		String query = matcher.group("query");
-		
-		boolean isTaste = matcher.group("taste") != null;
-		boolean isPicture = matcher.group("picture") != null;
+	private Optional<LCBOProductResponse> findProduct(String query) {
 		
 		GenericUrl url;
 		
@@ -268,65 +309,181 @@ public class LCBOCommand extends Command {
 			HttpRequest request = requestFactory.buildGetRequest(url);
 			HttpResponse response = request.execute();		
 			
-			LCBOResponse lcboResponse = response.parseAs(LCBOResponse.class);
-
-			final StringBuilder builder = new StringBuilder();
-			if (lcboResponse.results.isEmpty()) {
-				builder.append("I couldn't find that.\n");
-				
-				if (lcboResponse.suggestion != null) {
-					builder.append(" May I suggest trying \"")
-							.append(lcboResponse.suggestion)
-							.append("\"?");
-				}				
-			} else {				
-				if (isTaste) {
-					LCBOProduct product = lcboResponse.results.get(0);
-
-					builder.append("Tasting notes for ").append(product.name).append(": ");
-
-					if (product.hasNotes()) {						
-						builder.append(product.tasting_note);
-					} else {
-						builder.append("none!");
-					}
-					
-					if (product.hasServingSuggestion()) {
-						builder.append("\nServing suggestions: ")
-								.append(product.serving_suggestion);
-					}
-				} else if (isPicture) {
-					LCBOProduct product = lcboResponse.results.get(0);
-					
-					if (! Data.isNull(product.image_url)) {						
-						builder.append(product.image_url);
-					} else if (! Data.isNull(product.image_thumb_url)) {						
-						builder.append(product.image_thumb_url);
-					} else {				
-						builder.append("No picture for ").append(product.name);
-					}
-				} else {
-					if (lcboResponse.results.size() > MAX_RESULTS) {
-						builder.append("Results (")
-							.append(Integer.toString(lcboResponse.pager.total_record_count))
-							.append(" total results, limiting to ")
-							.append(Integer.toString(MAX_RESULTS))
-							.append("):\n");
-					}
-
-					lcboResponse.results.stream().limit(MAX_RESULTS).forEach(product -> {				
-						builder.append(product);
-					});				
-				}
-								
-			}
-
-			return Optional.of(builder.toString());
+			return Optional.of(response.parseAs(LCBOProductResponse.class));
 		} catch (IOException ex) {
 			logger.error("Error making API query: {}", query, ex);
 		}
 		
 		return Optional.empty();
+		
+	}
+	
+	/**
+	 * Process a message for querying products
+	 * 
+	 * @param query
+	 * @param isTaste
+	 * @param isPicture
+	 * @return 
+	 */
+	private Optional<String> processProductMessage(String query, boolean isTaste, boolean isPicture) {
+			
+		Optional<LCBOProductResponse> optionalLcboResponse = findProduct(query);
+
+		if (! optionalLcboResponse.isPresent()) {
+			return Optional.empty();
+		}
+			
+		final StringBuilder builder = new StringBuilder();
+		LCBOProductResponse lcboResponse = optionalLcboResponse.get();
+		
+		if (lcboResponse.results.isEmpty()) {
+			builder.append("I couldn't find that.\n");
+
+			if (lcboResponse.suggestion != null) {
+				builder.append(" May I suggest trying \"")
+						.append(lcboResponse.suggestion)
+						.append("\"?");
+			}				
+		} else {				
+			if (isTaste) {
+				LCBOProduct product = lcboResponse.results.get(0);
+
+				builder.append("Tasting notes for ").append(product.name).append(": ");
+
+				if (product.hasNotes()) {						
+					builder.append(product.tasting_note);
+				} else {
+					builder.append("none!");
+				}
+
+				if (product.hasServingSuggestion()) {
+					builder.append("\nServing suggestions: ")
+							.append(product.serving_suggestion);
+				}
+			} else if (isPicture) {
+				LCBOProduct product = lcboResponse.results.get(0);
+
+				if (! Data.isNull(product.image_url)) {						
+					builder.append(product.image_url);
+				} else if (! Data.isNull(product.image_thumb_url)) {						
+					builder.append(product.image_thumb_url);
+				} else {				
+					builder.append("No picture for ").append(product.name);
+				}
+			} else {
+				if (lcboResponse.results.size() > MAX_RESULTS) {
+					builder.append("Results (")
+						.append(Integer.toString(lcboResponse.pager.total_record_count))
+						.append(" total results, limiting to ")
+						.append(Integer.toString(MAX_RESULTS))
+						.append("):\n");
+				}
+
+				lcboResponse.results.stream().limit(MAX_RESULTS).forEach(product -> {				
+					builder.append(product);
+				});				
+			}
+
+		}
+
+		return Optional.of(builder.toString());
+	}
+	
+	/**
+	 * Process a message for querying stores
+	 * 
+	 * @param query
+	 * @return 
+	 */
+	private Optional<String> processStoreMessage(String query) {
+		
+		// Split up the query (if it included the at)
+		
+		Matcher queryMatcher = STORE_QUERY_PATTERN.matcher(query);
+		
+		String storeQuery = null;
+		if (queryMatcher.find()) {
+			storeQuery = queryMatcher.group("storequery");
+			query = query.substring(0, queryMatcher.start());
+		}
+		
+		logger.trace("Split {}:{}", query, storeQuery);
+		
+		Optional<LCBOProductResponse> optionalLcboResponse = findProduct(query);
+
+		if (! optionalLcboResponse.isPresent()) {
+			return Optional.empty();
+		}
+		
+		final StringBuilder builder = new StringBuilder();
+		LCBOProductResponse lcboResponse = optionalLcboResponse.get();
+		
+		if (lcboResponse.results.isEmpty()) {
+			builder.append("I couldn't find that.\n");
+		} else {
+			LCBOProduct product = lcboResponse.results.get(0);
+			
+			GenericUrl url;
+
+			try {
+				String urlString = BASE_URL +
+						"/products/" + product.id +
+						"/stores";
+
+				if (storeQuery != null) {
+					urlString += "?q=" + URLEncoder.encode(storeQuery, "UTF-8");
+				}
+				
+				url = new GenericUrl(urlString);
+				
+				HttpRequest request = requestFactory.buildGetRequest(url);
+				HttpResponse response = request.execute();		
+
+				LCBOStoreResponse storeResponse = response.parseAs(LCBOStoreResponse.class);
+
+				if (storeResponse.results.isEmpty()) {
+					builder.append("No matching stores found.");					
+				} else {
+					builder.append("Stores with ").append(product.name).append(":");
+					storeResponse.results.stream().sorted((a, b) -> {
+						return b.quantity - a.quantity;
+					}).forEach(store -> {
+						builder.append("\nStore: ")
+							.append(store.name)
+							.append(" at ")
+							.append(store.address_line_1)
+							.append(", ")
+							.append(store.address_line_2)
+							.append(", ")
+							.append(store.city)
+							.append(" has ")
+							.append(store.quantity);
+					});
+				}
+			} catch (IOException ex) {
+				logger.error("Error making API query: {}", query, ex);
+			}				
+			
+		}			
+			
+		return Optional.of(builder.toString());		
+	}	
+	
+	@Override
+	public Optional<String> processMessage(String from, String message, Matcher matcher) {
+		
+		String query = matcher.group("query");		
+		boolean isTaste = matcher.group("taste") != null;
+		boolean isPicture = matcher.group("picture") != null;
+		boolean isStore = matcher.group("store") != null;
+		
+		if (isStore) {
+			return processStoreMessage(query);
+		} else {
+			return processProductMessage(query, isTaste, isPicture);		
+		}
+		
 	}
 	
 }
