@@ -72,4 +72,16 @@ public abstract class Command {
 	
 	};
 	
+	/**
+	 * Returns true if this is an admin only command.
+	 * 
+	 * If this returns true, the command will only respond to JIDs listed in the admins list.
+	 * This includes JIDs of rooms, so entire rooms can be admins if you want.
+	 * 
+	 * @return 
+	 */
+	public boolean isAdminOnly() {
+		return false;
+	};
+	
 }

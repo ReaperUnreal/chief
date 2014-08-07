@@ -50,20 +50,19 @@ public class Bot implements ChatManagerListener, MessageListener {
 	private static final Logger logger = LogManager.getLogger(Bot.class);
 	
 	private final Lock lock;
-	private final Condition running;
+	private final Condition running;	
 	private final XMPPConnection connection;
+	private final Properties properties;
 	private final String username;
 	private final String password;
 	private final String conferenceHost;
 	private final String nickname;
+	private final Pattern roomPrefixPattern;
 	private final List<String> rooms;
 	private final List<String> admins;
 
 	private final ConcurrentHashMap<String, MultiUserChat> multiUserChatsByRoom;
-	
 	private final List<Command> commands;
-	private final Properties properties;
-	private final Pattern roomPrefixPattern;
 
 	private static final List<String> requiredProperties = Arrays.asList(
 			"host",
@@ -335,6 +334,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 		if (fromRoom && fromJID.endsWith(nickname)) {
 			return Optional.empty();
 		}
+
+		boolean isAdmin = admins.contains(XMPP.getPlainJID(fromJID));
 		
 		String body = message.getBody();
 		if (body != null) {
@@ -358,7 +359,13 @@ public class Bot implements ChatManagerListener, MessageListener {
 
 				Matcher matcher = command.getPattern().matcher(body);
 				if (matcher.matches()) {
-					response = command.processMessage(fromJID, message.getBody(), matcher, fromRoom);
+					if (command.isAdminOnly() && ! isAdmin) {
+						response = Optional.of("This is an admin only command. Get out.");
+					} else {
+						response = command.processMessage(
+								fromJID, message.getBody(), matcher, fromRoom);						
+					}
+					
 					break;
 				}
 			}

@@ -41,5 +41,10 @@ public class QuitCommand extends Command {
 		getBot().exit();		
 		return Optional.empty();
 	}
+
+	@Override
+	public boolean isAdminOnly() {
+		return true;
+	}
 	
 }
