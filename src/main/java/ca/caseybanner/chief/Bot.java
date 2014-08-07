@@ -57,6 +57,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 	private final String conferenceHost;
 	private final String nickname;
 	private final List<String> rooms;
+	private final List<String> admins;
 
 	private final ConcurrentHashMap<String, MultiUserChat> multiUserChatsByRoom;
 	
@@ -64,31 +65,58 @@ public class Bot implements ChatManagerListener, MessageListener {
 	private final Properties properties;
 	private final Pattern roomPrefixPattern;
 
+	private static final List<String> requiredProperties = Arrays.asList(
+			"host",
+			"port",
+			"username",
+			"password",
+			"conferenceHost"
+	);
+	
 	/**
 	 * Bot constructor
 	 * 
 	 * @param properties 
+	 * @throws ca.caseybanner.chief.commands.ConfigurationException 
 	 */
-	public Bot(Properties properties) {
+	public Bot(Properties properties) throws ConfigurationException {
 
 		lock = new ReentrantLock();
 		running = lock.newCondition();
 
 		this.properties = properties;
 		
-		// TODO: Throw errors when required properties are missing
+		// Make sure the required properties exist
+		
+		for (String requiredProperty : requiredProperties) {
+			if (properties.getProperty(requiredProperty) == null) {
+				throw new ConfigurationException(
+						"Missing required configuration property: " + requiredProperty);
+			}			
+		}	
 		
 		String host = properties.getProperty("host");
-		int port = Integer.parseInt(properties.getProperty("port"));
-		
-		ConnectionConfiguration config = new ConnectionConfiguration(host, port);
-		
-		this.nickname = properties.getProperty("nickname", "Chief Bot");		
+		int port = Integer.parseInt(properties.getProperty("port"));			
 		this.username = properties.getProperty("username");
 		this.password = properties.getProperty("password");	
 		this.conferenceHost = properties.getProperty("conferenceHost");		
+
+		this.nickname = properties.getProperty("nickname", "Chief Bot");		
 		this.roomPrefixPattern = Pattern.compile(properties.getProperty(
 				"roomPrefix", "^!\\s*"));
+
+		ConnectionConfiguration config = new ConnectionConfiguration(host, port);
+		
+		// Load admins
+		
+		String adminsString = properties.getProperty("admins");
+		if (adminsString == null) {
+			admins = Collections.emptyList();
+		} else {
+			admins = Arrays.asList(adminsString.split(","));
+		}
+		
+		// Load rooms
 		
 		String roomsString = properties.getProperty("rooms");
 		if (roomsString == null) {
@@ -104,7 +132,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 		
 		commands = new ArrayList<>();		
 		
-		// TODO: Load plugins based on properties file		
+		// TODO: Load commands based on properties file
+		
 		addCommand(HelpCommand::new);
 		addCommand(QuitCommand::new);
 		addCommand(YouTubeCommand::new);
@@ -257,7 +286,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 	 * @return 
 	 */
 	private boolean joinRoom(String room) {
-		logger.trace("Join room \"{}\"", room);
+		logger.info("Join room \"{}\"", room);
 
 		if (multiUserChatsByRoom.containsKey(room)) {
 

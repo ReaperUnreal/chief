@@ -1,5 +1,6 @@
 package ca.caseybanner.chief;
 
+import ca.caseybanner.chief.commands.ConfigurationException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -29,9 +30,13 @@ public class Chief {
             System.exit(1);
         }				
 		
-		Bot bot = new Bot(properties);
-		bot.start();			
-		bot.waitForExit();
+		try {
+			Bot bot = new Bot(properties);
+			bot.start();
+			bot.waitForExit();
+		} catch (ConfigurationException e) {
+			logger.error("Configuration error: {}", e.getMessage());
+		}
 
 		logger.info("Chief exiting");
 		System.exit(0);
