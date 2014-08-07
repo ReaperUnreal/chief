@@ -1,5 +1,6 @@
-Chief
-=====
+# Chief
+
+[![Build Status](https://secure.travis-ci.org/kcbanner/chief.png?branch=master)](http://travis-ci.org/kcbanner/chief)
 
 Java XMPP Chat Bot
 
