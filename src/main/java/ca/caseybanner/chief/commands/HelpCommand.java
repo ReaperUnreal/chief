@@ -36,7 +36,8 @@ public class HelpCommand extends Command {
 	}
 
 	@Override
-	public Optional<String> processMessage(String from, String message, Matcher matcher) {
+	public Optional<String> processMessage(
+			String from, String message, Matcher matcher, boolean fromRoom) {
 		final StringBuilder builder = new StringBuilder(USAGE_HEADER);		
 		
 		getBot().getCommands().stream().forEach(command -> {

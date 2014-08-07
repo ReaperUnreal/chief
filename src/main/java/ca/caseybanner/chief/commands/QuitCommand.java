@@ -35,7 +35,9 @@ public class QuitCommand extends Command {
 	}
 
 	@Override
-	public Optional<String> processMessage(String from, String message, Matcher matcher) {		
+	public Optional<String> processMessage(
+			String from, String message, Matcher matcher, boolean fromRoom) {		
+		
 		getBot().exit();		
 		return Optional.empty();
 	}

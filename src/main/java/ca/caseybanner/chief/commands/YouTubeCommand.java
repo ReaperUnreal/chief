@@ -66,7 +66,8 @@ public class YouTubeCommand extends Command {
 	}
 
 	@Override
-	public Optional<String> processMessage(String from, String message, Matcher matcher) {
+	public Optional<String> processMessage(
+			String from, String message, Matcher matcher, boolean fromRoom) {
 		
 		String query = matcher.group(1);				
 		

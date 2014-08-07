@@ -48,17 +48,26 @@ public abstract class Command {
 	 * 
 	 * @return 
 	 */
-	public abstract Pattern getPattern();
-	
+	public abstract Pattern getPattern();	
 
 	/**
 	 * Process a message and optionally return a response. 
 	 * 
 	 * @param from the nickname the chat was from
-	 * @param message
-	 * @param matcher
+	 * @param message the message itself
+	 * @param matcher the matcher created by pattern returned by getPattern(), 
+	 *	               already run on the message
+	 * @param fromRoom whether or not this message come from a room
 	 * @return 
 	 */
-	public abstract Optional<String> processMessage(String from, String message, Matcher matcher);
+	public abstract Optional<String> processMessage(
+			String from, String message, Matcher matcher, boolean fromRoom);
+	
+	/**
+	 * Called when all configuration properties have been set.
+	 */
+	public void configurationComplete() {
+	
+	};
 	
 }

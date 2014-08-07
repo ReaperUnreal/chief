@@ -2,6 +2,7 @@ package ca.caseybanner.chief;
 
 import ca.caseybanner.chief.commands.HelpCommand;
 import ca.caseybanner.chief.commands.LCBOCommand;
+import ca.caseybanner.chief.commands.MemeCommand;
 import ca.caseybanner.chief.commands.QuitCommand;
 import ca.caseybanner.chief.commands.YouTubeCommand;
 import java.io.IOException;
@@ -99,6 +100,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 		addCommand(QuitCommand::new);
 		addCommand(YouTubeCommand::new);
 		addCommand(LCBOCommand::new);
+		addCommand(MemeCommand::new);
 		
 	}
 	
@@ -154,8 +156,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 					ex);				
 			}			
 		});
-			
-		// TODO: Call some method saying we are done configuring?
+		
+		command.configurationComplete();
 		
 		commands.add(command);
 		
@@ -309,7 +311,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 
 				Matcher matcher = command.getPattern().matcher(body);
 				if (matcher.matches()) {
-					response = command.processMessage(fromJID, message.getBody(), matcher);
+					response = command.processMessage(fromJID, message.getBody(), matcher, fromRoom);
 					break;
 				}
 			}

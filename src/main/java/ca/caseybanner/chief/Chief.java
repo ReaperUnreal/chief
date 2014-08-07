@@ -1,5 +1,7 @@
 package ca.caseybanner.chief;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -12,15 +14,15 @@ import org.apache.logging.log4j.Logger;
 public class Chief {
 
 	private static final Logger logger = LogManager.getLogger(Chief.class);
-	private static final String PROPERTIES_FILENAME = "chief.properties";
+	private static final String PROPERTIES_FILENAME = "config/chief.properties";
 	
     public static void main(String[] args) {
 		
 		logger.info("Chief is starting");
 		
         Properties properties = new Properties();		
-        try {			
-            InputStream in = Chief.class.getResourceAsStream("/" + PROPERTIES_FILENAME);
+        try {
+            InputStream in = new FileInputStream(new File(PROPERTIES_FILENAME));
             properties.load(in);
         } catch (IOException e) {
 			logger.error("Error reading " + PROPERTIES_FILENAME, e);

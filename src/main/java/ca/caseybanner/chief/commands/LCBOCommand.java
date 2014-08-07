@@ -40,7 +40,7 @@ public class LCBOCommand extends Command {
 	
 	private final JacksonFactory jsonFactory;
 	private final HttpRequestFactory requestFactory;
-
+	
 	public static class LCBOPager {
 		
 		@Key
@@ -432,7 +432,8 @@ public class LCBOCommand extends Command {
 						"/stores";
 
 				if (storeQuery != null) {
-					urlString += "?q=" + URLEncoder.encode(storeQuery, "UTF-8");
+					urlString += "?q=" + URLEncoder.encode(storeQuery, "UTF-8") 
+							+ "&order=products_count.desc";
 				}
 				
 				url = new GenericUrl(urlString);
@@ -445,7 +446,10 @@ public class LCBOCommand extends Command {
 				if (storeResponse.results.isEmpty()) {
 					builder.append("No matching stores found.");					
 				} else {
+					
+					
 					builder.append("Stores with ").append(product.name).append(":");
+					
 					storeResponse.results.stream().sorted((a, b) -> {
 						return b.quantity - a.quantity;
 					}).forEach(store -> {
@@ -471,7 +475,8 @@ public class LCBOCommand extends Command {
 	}	
 	
 	@Override
-	public Optional<String> processMessage(String from, String message, Matcher matcher) {
+	public Optional<String> processMessage(
+			String from, String message, Matcher matcher, boolean fromRoom) {
 		
 		String query = matcher.group("query");		
 		boolean isTaste = matcher.group("taste") != null;
