@@ -7,7 +7,8 @@
 package ca.caseybanner.chief;
 
 /**
- *
+ * XMPP utilities
+ * 
  * @author kcbanner
  */
 public class XMPP {

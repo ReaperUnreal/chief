@@ -90,6 +90,9 @@ public class MemeCommand extends Command {
 		
 	}
 	
+	/**
+	 * Response from the caption_image endpoint
+	 */
 	public static class CaptionRequest {
 	
 		@Key
