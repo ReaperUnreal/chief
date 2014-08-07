@@ -45,8 +45,19 @@ public class YouTubeCommand extends Command {
 			.setApplicationName("chief-bot")
 			.build();
 		
+		apiKey = null;
+		
 	}
 
+	@Override
+	public void configurationComplete() throws ConfigurationException {
+
+		if (apiKey == null) {
+			throw new ConfigurationException("API key must be specified");
+		}
+		
+	}	
+	
 	/**
 	 * Setter for apiKey
 	 * @param apiKey 

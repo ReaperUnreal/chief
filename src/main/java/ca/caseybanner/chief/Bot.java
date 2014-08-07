@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +56,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 	private final String password;
 	private final String conferenceHost;
 	private final String nickname;
+	private final List<String> rooms;
 
 	private final ConcurrentHashMap<String, MultiUserChat> multiUserChatsByRoom;
 	
@@ -88,8 +90,14 @@ public class Bot implements ChatManagerListener, MessageListener {
 		this.roomPrefixPattern = Pattern.compile(properties.getProperty(
 				"roomPrefix", "^!\\s*"));
 		
-		multiUserChatsByRoom = new ConcurrentHashMap<>();		
+		String roomsString = properties.getProperty("rooms");
+		if (roomsString == null) {
+			rooms = Collections.emptyList();
+		} else {
+			rooms = Arrays.asList(roomsString.split(","));
+		}
 		
+		multiUserChatsByRoom = new ConcurrentHashMap<>();		
 		connection = new XMPPTCPConnection(config);		
 
 		// Add some default commands
@@ -196,7 +204,9 @@ public class Bot implements ChatManagerListener, MessageListener {
 			Roster roster = connection.getRoster();
 			roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all);		
 			
-			joinRoom("149422_test");
+			rooms.stream().forEach(roomName -> {				
+				joinRoom(roomName);
+			});
 			
 		} catch (XMPPException e) {
 			throw new RuntimeException("XMPP Error", e);
@@ -247,7 +257,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 	 * @return 
 	 */
 	private boolean joinRoom(String room) {
-			
+		logger.trace("Join room \"{}\"", room);
+
 		if (multiUserChatsByRoom.containsKey(room)) {
 
 			// Already joined this room
