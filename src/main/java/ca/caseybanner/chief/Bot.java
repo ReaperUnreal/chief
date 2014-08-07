@@ -1,5 +1,6 @@
 package ca.caseybanner.chief;
 
+import ca.caseybanner.chief.commands.ConfigurationException;
 import ca.caseybanner.chief.commands.HelpCommand;
 import ca.caseybanner.chief.commands.LCBOCommand;
 import ca.caseybanner.chief.commands.MemeCommand;
@@ -157,9 +158,13 @@ public class Bot implements ChatManagerListener, MessageListener {
 			}			
 		});
 		
-		command.configurationComplete();
-		
-		commands.add(command);
+		try {
+			command.configurationComplete();
+			commands.add(command);
+		} catch (ConfigurationException e) {
+			logger.error("Command configuration error in {}: {}",
+					command.getClass().toString(), e.getMessage());
+		}
 		
 	}
 	

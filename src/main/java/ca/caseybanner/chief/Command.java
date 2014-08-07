@@ -6,6 +6,7 @@
 
 package ca.caseybanner.chief;
 
+import ca.caseybanner.chief.commands.ConfigurationException;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,8 +66,9 @@ public abstract class Command {
 	
 	/**
 	 * Called when all configuration properties have been set.
+	 * @throws ca.caseybanner.chief.commands.ConfigurationException
 	 */
-	public void configurationComplete() {
+	public void configurationComplete() throws ConfigurationException {
 	
 	};
 	
