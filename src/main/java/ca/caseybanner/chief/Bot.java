@@ -266,8 +266,6 @@ public class Bot implements ChatManagerListener, MessageListener {
 			return true;
 		}
 
-		// TODO: Save the fact that we joined this room, to rejoin it on connect
-		
 		// Join the room, request 0 lines of history
 		
 		MultiUserChat muc = new MultiUserChat(connection, room + "@" + conferenceHost);
@@ -302,9 +300,13 @@ public class Bot implements ChatManagerListener, MessageListener {
 	 * @return 
 	 */
 	private Optional<String> handleMessage(String fromJID, Message message, boolean fromRoom) {
-		
-		// TODO: Ignore messages from ourselves (like posting things to a room we are in)
 
+		// Ignore messages from ourselves (like posting things to a room we are in)
+
+		if (fromRoom && fromJID.endsWith(nickname)) {
+			return Optional.empty();
+		}
+		
 		String body = message.getBody();
 		if (body != null) {
 			Optional<String> response = Optional.empty();
