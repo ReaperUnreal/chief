@@ -36,6 +36,7 @@ public class Chief {
 			bot.waitForExit();
 		} catch (ConfigurationException e) {
 			logger.error("Configuration error: {}", e.getMessage());
+            System.exit(1);
 		}
 
 		logger.info("Chief exiting");

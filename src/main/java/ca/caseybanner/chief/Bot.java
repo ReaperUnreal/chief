@@ -64,6 +64,9 @@ public class Bot implements ChatManagerListener, MessageListener {
 	private final ConcurrentHashMap<String, MultiUserChat> multiUserChatsByRoom;
 	private final List<Command> commands;
 
+	/**
+	 * List of properties that are required
+	 */
 	private static final List<String> requiredProperties = Arrays.asList(
 			"host",
 			"port",
