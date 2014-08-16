@@ -43,6 +43,8 @@ import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 
 /**
+ * The Bot!
+ *
  * Created by kcbanner on 7/24/2014.
  */
 public class Bot implements ChatManagerListener, MessageListener {
@@ -78,7 +80,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 	/**
 	 * Bot constructor
 	 * 
-	 * @param properties 
+	 * @param properties configuration properties
 	 * @throws ca.caseybanner.chief.commands.ConfigurationException 
 	 */
 	public Bot(Properties properties) throws ConfigurationException {
@@ -134,7 +136,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 		
 		commands = new ArrayList<>();		
 		
-		// TODO: Load commands based on properties file
+		/* TODO: Load commands based on properties file */
 		
 		addCommand(HelpCommand::new);
 		addCommand(QuitCommand::new);
@@ -147,7 +149,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 	/**
 	 * Constructs and adds a command
 	 * 
-	 * @param commandConstructor 
+	 * @param commandConstructor the constructor of a Command to add
 	 */
 	private void addCommand(Function<Bot, Command> commandConstructor) {
 		
@@ -156,15 +158,11 @@ public class Bot implements ChatManagerListener, MessageListener {
 		// Load any properties prefixed with this classname and apply them
 		
 		String typeName = command.getClass().getTypeName();	
-		properties.stringPropertyNames().stream().filter(propertyName -> {
-			
-			// Filter properties that are prefixed with the full type name,
-			// a period, and then at least one character
-			
-			return propertyName.indexOf(typeName) == 0 && 
-					propertyName.length() > typeName.length() + 1 &&
-					propertyName.charAt(typeName.length()) == '.';
-		}).forEach(propertyName -> {			
+		properties.stringPropertyNames().stream().filter(propertyName ->
+				(propertyName.indexOf(typeName) == 0) &&
+				(propertyName.length() > (typeName.length() + 1)) &&
+				(propertyName.charAt(typeName.length()) == '.')).forEach(propertyName -> {
+
 			String fieldName = propertyName.substring(typeName.length() + 1);
 			
 			// Construct the name of the setter for this field
@@ -210,10 +208,12 @@ public class Bot implements ChatManagerListener, MessageListener {
 	/**
 	 * Getter for the list of commands.
 	 * 
-	 * @return 
+	 * @return list of Commands
 	 */
 	public List<Command> getCommands() {
+
 		return Collections.unmodifiableList(commands);
+
 	}
 	
 	/**
@@ -235,9 +235,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 			Roster roster = connection.getRoster();
 			roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all);		
 			
-			rooms.stream().forEach(roomName -> {				
-				joinRoom(roomName);
-			});
+			rooms.stream().forEach(this::joinRoom);
 			
 		} catch (XMPPException e) {
 			throw new RuntimeException("XMPP Error", e);
@@ -258,7 +256,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 		try {		
 			running.await();			
 			connection.disconnect();
-		} catch (InterruptedException | SmackException.NotConnectedException ex) {
+		} catch (InterruptedException | SmackException.NotConnectedException ignored) {
 			
 		} finally {
 			lock.unlock();
@@ -283,9 +281,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 	/**
 	 * Join a room
 	 * 
-	 * @param room
-	 * @param nickname
-	 * @return 
+	 * @param room name of the room to join (part before the "@conference_host"
+	 * @return Whether or not joining the room succeeded
 	 */
 	private boolean joinRoom(String room) {
 		logger.info("Join room \"{}\"", room);
@@ -306,9 +303,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 
 		try {		
 			muc.join(nickname, "", history, SmackConfiguration.getDefaultPacketReplyTimeout());
-			muc.addMessageListener((Packet packet) -> {				
-				processRoomMessage(muc, packet);
-			});
+			muc.addMessageListener((Packet packet) -> processRoomMessage(muc, packet));
 			
 			multiUserChatsByRoom.put(room, muc);
 
@@ -326,9 +321,9 @@ public class Bot implements ChatManagerListener, MessageListener {
 	 * Process a message and return an optional response
 	 * 
 	 * @param fromJID the JID this message was from
-	 * @param message
-	 * @param fromRoom
-	 * @return 
+	 * @param message the Message that was received
+	 * @param fromRoom whether or not this message came from a room
+	 * @return optional response string
 	 */
 	private Optional<String> handleMessage(String fromJID, Message message, boolean fromRoom) {
 
@@ -402,8 +397,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 	 * Convert a user's JID to a nickname using the roster.
 	 * This does not work for JIDs from MUCs.
 	 * 
-	 * @param jid
-	 * @return 
+	 * @param jid the JID to convert to a nickname
+	 * @return the name of the JID in the roster
 	 */
 	private String jidToNickname(String jid) {
 		String withoutResource = XMPP.getPlainJID(jid);
@@ -420,8 +415,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 	/**
 	 * Converts a nickname to a JID by looking it up in the roster.
 	 * 
-	 * @param nickname
-	 * @return 
+	 * @param nickname the nickname to convert
+	 * @return the JID of the nickname in the roster, or the nickname if it wasn't found
 	 */
 	private String nicknameToJID(String nickname) {	
         for (RosterEntry r : connection.getRoster().getEntries()) {
@@ -439,18 +434,20 @@ public class Bot implements ChatManagerListener, MessageListener {
 	 * out the `mention_name` attribute in the `<item>` tag inside the roster
 	 * <query>, this is good enough.
 	 * 
-	 * @param nickname
-	 * @return 
+	 * @param nickname the nickname to convert
+	 * @return the HipChat mention name
 	 */
 	private String nicknameToMentionName(String nickname) {
+
 		return nickname.replaceAll("\\s", "");
+
 	}
 	
 	/**
 	 * Send a message to a chat
 	 * 
-	 * @param chat
-	 * @param message 
+	 * @param chat the chat to send the message to
+	 * @param message the message to send
 	 */
 	private void sendMessage(Chat chat, String message) {
 		try {
@@ -463,8 +460,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 	/**
 	 * Send a message to a multi user chat
 	 * 
-	 * @param chat
-	 * @param message 
+	 * @param chat the MultiUserChat to send the message to
+	 * @param message the message to send
 	 */
 	private void sendMessage(MultiUserChat chat, String message) {
 		try {
@@ -476,9 +473,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 	
 	/**
      * Called when a new chat is created with the bot
-     * 
-     * @param chat
-     * @param createdLocally 
+     *
+	 * @see org.jivesoftware.smack.ChatManagerListener
      */
     @Override
     public void chatCreated(Chat chat, boolean createdLocally) {
@@ -489,9 +485,7 @@ public class Bot implements ChatManagerListener, MessageListener {
     }
 	
 	/**
-	 *
-	 * @param chat
-	 * @param message
+	 * @see org.jivesoftware.smack.MessageListener
 	 */
 	@Override
 	public void processMessage(Chat chat, Message message) {		
@@ -500,10 +494,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 			logger.trace("Message from `{}`: {}", chat.getParticipant(), message.getBody());
 
 			Optional<String> response = handleMessage(chat.getParticipant(), message, false);
-			
-			response.ifPresent(responseString -> {
-				sendMessage(chat, responseString);		
-			});
+			response.ifPresent(responseString -> sendMessage(chat, responseString));
+
 		}
 		
 	}
@@ -518,11 +510,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 			
 			String fromJID = message.getFrom();
 			if (fromJID.contains("/")) {	
-				Optional<String> response = handleMessage(fromJID, message, true);			
-
-				response.ifPresent(responseString -> {
-					sendMessage(chat, responseString);		
-				});
+				Optional<String> response = handleMessage(fromJID, message, true);
+				response.ifPresent(responseString -> sendMessage(chat, responseString));
 			}			
 		} else if (packet instanceof Presence) {
 			Presence presence = (Presence) packet;

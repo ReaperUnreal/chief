@@ -22,16 +22,16 @@ public abstract class Command {
 	/**
 	 * Constructor
 	 * 
-	 * @param bot 
+	 * @param bot the Bot this command belongs to
 	 */
-	public Command(Bot bot) {
+	protected Command(Bot bot) {
 		this.bot = bot;
 	}
 	
 	/**
 	 * Getter for the bot this command belongs to
 	 * 
-	 * @return 
+	 * @return the Bot instance
 	 */
 	protected Bot getBot() {
 		return bot;
@@ -40,14 +40,14 @@ public abstract class Command {
 	/**
 	 * Return a usage string for this command
 	 * 
-	 * @return 
+	 * @return usage string to be displayed to the user
 	 */
 	public abstract String getUsage();
 	
 	/**
 	 * Return a Pattern used to determine if a message is accepted by this command.
 	 * 
-	 * @return 
+	 * @return pattern used to match against incoming messages
 	 */
 	public abstract Pattern getPattern();	
 
@@ -59,7 +59,7 @@ public abstract class Command {
 	 * @param matcher the matcher created by pattern returned by getPattern(), 
 	 *	               already run on the message
 	 * @param fromRoom whether or not this message come from a room
-	 * @return 
+	 * @return optional response to the message
 	 */
 	public abstract Optional<String> processMessage(
 			String from, String message, Matcher matcher, boolean fromRoom);
@@ -70,7 +70,7 @@ public abstract class Command {
 	 */
 	public void configurationComplete() throws ConfigurationException {
 	
-	};
+	}
 	
 	/**
 	 * Returns true if this is an admin only command.
@@ -78,10 +78,10 @@ public abstract class Command {
 	 * If this returns true, the command will only respond to JIDs listed in the admins list.
 	 * This includes JIDs of rooms, so entire rooms can be admins if you want.
 	 * 
-	 * @return 
+	 * @return true if this command is only to be allowed to be used by admins
 	 */
 	public boolean isAdminOnly() {
 		return false;
-	};
+	}
 	
 }

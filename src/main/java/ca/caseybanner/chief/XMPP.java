@@ -11,13 +11,13 @@ package ca.caseybanner.chief;
  * 
  * @author kcbanner
  */
-public class XMPP {
+class XMPP {
 	
 	/**
 	 * Returns the JID without the resource portion
 	 * 
-	 * @param jid
-	 * @return 
+	 * @param jid input JID
+	 * @return JID with the trailing resource portion removed
 	 */
 	public static String getPlainJID(String jid) {
 		

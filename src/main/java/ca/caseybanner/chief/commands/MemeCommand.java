@@ -96,19 +96,19 @@ public class MemeCommand extends Command {
 	public static class CaptionRequest {
 	
 		@Key
-		String template_id;
+		final String template_id;
 		
 		@Key
-		String username;
+		final String username;
 		
 		@Key
-		String password;
+		final String password;
 		
 		@Key
-		String text0;
+		final String text0;
 
 		@Key
-		String text1;
+		final String text1;
 
 		public CaptionRequest(
 				String template_id, String username, String password, String text0, String text1) {
@@ -146,25 +146,22 @@ public class MemeCommand extends Command {
 	
 	/**
 	 * Constructor
-	 * 
-	 * @param bot 
+	 * @see ca.caseybanner.chief.Command
 	 */
 	public MemeCommand(Bot bot) {
 		super(bot);
 		
 		jsonFactory = new JacksonFactory();			
-		requestFactory = new NetHttpTransport().createRequestFactory((HttpRequest request) -> {
-			request.setParser(new JsonObjectParser(jsonFactory));
-		});
-			
+		requestFactory = new NetHttpTransport().createRequestFactory(
+				(HttpRequest request) -> request.setParser(new JsonObjectParser(jsonFactory)));
+
 		memes = null;
-		
 	}	
 	
 	/**
 	 * Setter for password
 	 * 
-	 * @param password 
+	 * @param password plaintext password
 	 */
 	public void setPassword(String password) {
 		this.password = password;
@@ -173,7 +170,7 @@ public class MemeCommand extends Command {
 	/**
 	 * Setter for username
 	 * 
-	 * @param username 
+	 * @param username plaintext username
 	 */
 	public void setUsername(String username) {
 		this.username = username;
@@ -233,8 +230,8 @@ public class MemeCommand extends Command {
 	/**
 	 * Generate a meme.
 	 * 
-	 * @param topText
-	 * @param bottomText
+	 * @param topText the text to appear on the top of the image
+	 * @param bottomText the text to appear on the bottom of the image
 	 * @return meme URL
 	 */
 	private Optional<String> generateMeme(String templateId, String topText, String bottomText) {
@@ -300,17 +297,9 @@ public class MemeCommand extends Command {
 			}
 			
 			StringBuilder builder = new StringBuilder("Found these memes:\n");
-			memes.stream().filter(meme -> {
-
-				// Filter the matches, if there was a query
-				
-				return ! memeQuery.isPresent() ||
-						(memeQuery.isPresent() &&
-						meme.name.toLowerCase().contains(memeQuery.get()));				
-			}).forEach(meme -> {
-				builder.append(meme.name)
-						.append("\n");
-			});
+			memes.stream().filter(
+				meme -> ! memeQuery.isPresent() || meme.name.toLowerCase().contains(memeQuery.get()))
+					.forEach(meme -> builder.append(meme.name).append("\n"));
 
 			return Optional.of(builder.toString());
 		} else if (command.equals("plz")) {

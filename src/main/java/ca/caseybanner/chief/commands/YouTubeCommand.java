@@ -60,7 +60,7 @@ public class YouTubeCommand extends Command {
 	
 	/**
 	 * Setter for apiKey
-	 * @param apiKey 
+	 * @param apiKey YouTube API key
 	 */
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;

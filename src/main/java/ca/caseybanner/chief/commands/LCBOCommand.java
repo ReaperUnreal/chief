@@ -35,10 +35,10 @@ public class LCBOCommand extends Command {
 	
 	private static final Pattern STORE_QUERY_PATTERN = Pattern.compile(
 			"\\s+at\\s+(?<storequery>.*)$");
-	
-	private static final int MAX_RESULTS = 1;
-	
-	private final JacksonFactory jsonFactory;
+
+    private static final int MAX_RESULTS = 1;
+
+    private final JacksonFactory jsonFactory;
 	private final HttpRequestFactory requestFactory;
 	
 	public static class LCBOPager {
@@ -280,10 +280,8 @@ public class LCBOCommand extends Command {
 		super(bot);
 		
 		jsonFactory = new JacksonFactory();			
-		requestFactory = new NetHttpTransport().createRequestFactory((HttpRequest request) -> {
-			request.setParser(new JsonObjectParser(jsonFactory));
-		});
-		
+		requestFactory = new NetHttpTransport().createRequestFactory(
+				(HttpRequest request) -> request.setParser(new JsonObjectParser(jsonFactory)));
 	}
 	
 	@Override
@@ -321,10 +319,10 @@ public class LCBOCommand extends Command {
 	/**
 	 * Process a message for querying products
 	 * 
-	 * @param query
-	 * @param isTaste
-	 * @param isPicture
-	 * @return 
+	 * @param query plaintext query
+	 * @param isTaste true if this is a request for tasting notes
+	 * @param isPicture true if this is a request for a picture
+	 * @return optional response message
 	 */
 	private Optional<String> processProductMessage(String query, boolean isTaste, boolean isPicture) {
 			
@@ -380,9 +378,7 @@ public class LCBOCommand extends Command {
 						.append("):\n");
 				}
 
-				lcboResponse.results.stream().limit(MAX_RESULTS).forEach(product -> {				
-					builder.append(product);
-				});				
+				lcboResponse.results.stream().limit(MAX_RESULTS).forEach(builder::append);
 			}
 
 		}
@@ -393,8 +389,8 @@ public class LCBOCommand extends Command {
 	/**
 	 * Process a message for querying stores
 	 * 
-	 * @param query
-	 * @return 
+	 * @param query plaintext store query
+	 * @return optional response
 	 */
 	private Optional<String> processStoreMessage(String query) {
 		
@@ -450,20 +446,17 @@ public class LCBOCommand extends Command {
 					
 					builder.append("Stores with ").append(product.name).append(":");
 					
-					storeResponse.results.stream().sorted((a, b) -> {
-						return b.quantity - a.quantity;
-					}).forEach(store -> {
-						builder.append("\nStore: ")
-							.append(store.name)
-							.append(" at ")
-							.append(store.address_line_1)
-							.append(", ")
-							.append(store.address_line_2)
-							.append(", ")
-							.append(store.city)
-							.append(" has ")
-							.append(store.quantity);
-					});
+					storeResponse.results.stream().sorted((a, b) -> b.quantity - a.quantity)
+						.forEach(store -> builder.append("\nStore: ")
+								.append(store.name)
+								.append(" at ")
+								.append(store.address_line_1)
+								.append(", ")
+								.append(store.address_line_2)
+								.append(", ")
+								.append(store.city)
+								.append(" has ")
+								.append(store.quantity));
 				}
 			} catch (IOException ex) {
 				logger.error("Error making API query: {}", query, ex);
