@@ -24,17 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jivesoftware.smack.Chat;
-import org.jivesoftware.smack.ChatManager;
-import org.jivesoftware.smack.ChatManagerListener;
-import org.jivesoftware.smack.ConnectionConfiguration;
-import org.jivesoftware.smack.MessageListener;
-import org.jivesoftware.smack.Roster;
-import org.jivesoftware.smack.RosterEntry;
-import org.jivesoftware.smack.SmackConfiguration;
-import org.jivesoftware.smack.SmackException;
-import org.jivesoftware.smack.XMPPConnection;
-import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
@@ -47,7 +37,7 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
  *
  * Created by kcbanner on 7/24/2014.
  */
-public class Bot implements ChatManagerListener, MessageListener {
+public class Bot implements ChatManagerListener, MessageListener, ConnectionListener {
 
 	private static final Logger logger = LogManager.getLogger(Bot.class);
 	
@@ -110,6 +100,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 				"roomPrefix", "^!\\s*"));
 
 		ConnectionConfiguration config = new ConnectionConfiguration(host, port);
+		config.setReconnectionAllowed(true);
+		config.setRosterLoadedAtLogin(true);
 		
 		// Load admins
 		
@@ -131,6 +123,7 @@ public class Bot implements ChatManagerListener, MessageListener {
 		
 		multiUserChatsByRoom = new ConcurrentHashMap<>();		
 		connection = new XMPPTCPConnection(config);		
+		connection.addConnectionListener(this);
 
 		// Add some default commands
 		
@@ -219,12 +212,11 @@ public class Bot implements ChatManagerListener, MessageListener {
 	/**
 	 * Connect to the server
 	 */
-	public void start() {		
-
+	public void start() {
 		try {
 			connection.connect();
 			connection.login(username, password, "Chief Bot");
-			
+
 			logger.info("Bot online: connected to domain {}", connection.getConnectionID());
 
             ChatManager chatManager = ChatManager.getInstanceFor(connection);
@@ -233,10 +225,10 @@ public class Bot implements ChatManagerListener, MessageListener {
 			// Roster setup
 			
 			Roster roster = connection.getRoster();
-			roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all);		
-			
+			roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all);
+
 			rooms.stream().forEach(this::joinRoom);
-			
+
 		} catch (XMPPException e) {
 			throw new RuntimeException("XMPP Error", e);
 		} catch (SmackException e) {
@@ -287,16 +279,17 @@ public class Bot implements ChatManagerListener, MessageListener {
 	private boolean joinRoom(String room) {
 		logger.info("Join room \"{}\"", room);
 
+		MultiUserChat muc;
 		if (multiUserChatsByRoom.containsKey(room)) {
 
 			// Already joined this room
 
-			return true;
-		}
+			logger.info("Already in this room, rejoining");
 
-		// Join the room, request 0 lines of history
-		
-		MultiUserChat muc = new MultiUserChat(connection, room + "@" + conferenceHost);
+			muc = multiUserChatsByRoom.get(room);
+		} else {
+			muc = new MultiUserChat(connection, room + "@" + conferenceHost);
+		}
 
 		DiscussionHistory history = new DiscussionHistory();
 		history.setMaxStanzas(0);
@@ -306,6 +299,8 @@ public class Bot implements ChatManagerListener, MessageListener {
 			muc.addMessageListener((Packet packet) -> processRoomMessage(muc, packet));
 			
 			multiUserChatsByRoom.put(room, muc);
+
+			logger.info("Room joined");
 
 			return true;
 		} catch (XMPPException.XMPPErrorException |
@@ -522,4 +517,79 @@ public class Bot implements ChatManagerListener, MessageListener {
 		
 	}
 
+	/**
+	 * @see org.jivesoftware.smack.ConnectionListener
+	 * @param connection
+	 */
+	@Override
+	public void connected(XMPPConnection connection) {
+
+		logger.info("Connected to server");
+
+	}
+
+	/**
+	 * @see org.jivesoftware.smack.ConnectionListener
+	 * @param connection
+	 */
+	@Override
+	public void authenticated(XMPPConnection connection) {
+
+		logger.info("Authentication successful");
+
+	}
+
+	/**
+	 * @see org.jivesoftware.smack.ConnectionListener
+	 */
+	@Override
+	public void connectionClosed() {
+
+		logger.info("Connection closed");
+
+	}
+
+	/**
+	 * @see org.jivesoftware.smack.ConnectionListener
+	 * @param e
+	 */
+	@Override
+	public void connectionClosedOnError(Exception e) {
+
+		logger.error("Connection was closed because of an error", e);
+
+	}
+
+	/**
+	 * @see org.jivesoftware.smack.ConnectionListener
+	 * @param seconds
+	 */
+	@Override
+	public void reconnectingIn(int seconds) {
+
+		logger.info("Reconnecting in {} seconds", seconds);
+
+	}
+
+	/**
+	 * @see org.jivesoftware.smack.ConnectionListener
+	 */
+	@Override
+	public void reconnectionSuccessful() {
+
+		logger.info("Reconnection successful");
+		rooms.stream().forEach(this::joinRoom);
+
+	}
+
+	/**
+	 * @see org.jivesoftware.smack.ConnectionListener
+	 * @param e
+	 */
+	@Override
+	public void reconnectionFailed(Exception e) {
+
+		logger.error("Reconnection failure", e);
+
+	}
 }
