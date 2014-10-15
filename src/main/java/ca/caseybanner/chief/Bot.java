@@ -7,6 +7,7 @@ import ca.caseybanner.chief.commands.MemeCommand;
 import ca.caseybanner.chief.commands.QuitCommand;
 import ca.caseybanner.chief.commands.YouTubeCommand;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -65,7 +66,8 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 			"port",
 			"username",
 			"password",
-			"conferenceHost"
+			"conferenceHost",
+            "commands"
 	);
 	
 	/**
@@ -103,6 +105,7 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 		ConnectionConfiguration config = new ConnectionConfiguration(host, port);
 		config.setReconnectionAllowed(true);
 		config.setRosterLoadedAtLogin(true);
+        config.setSecurityMode(ConnectionConfiguration.SecurityMode.required);
 		
 		// Load admins
 		
@@ -128,16 +131,39 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 
 		// Add some default commands
 		
-		commands = new ArrayList<>();		
-		
-		/* TODO: Load commands based on properties file */
-		
-		addCommand(HelpCommand::new);
-		addCommand(QuitCommand::new);
-		addCommand(YouTubeCommand::new);
-		addCommand(LCBOCommand::new);
-		addCommand(MemeCommand::new);
-		
+		commands = new ArrayList<>();
+
+        addCommand(HelpCommand::new);
+        addCommand(QuitCommand::new);
+
+		String[] commandClassnames = properties.getProperty("commands").split("\\s*,\\s*");
+        Arrays.stream(commandClassnames).forEach(classname -> {
+            try {
+                Class clazz = Class.forName(classname);
+                Class[] interfaces = clazz.getInterfaces();
+
+                for (Class c : interfaces) {
+                    if (c == Command.class) {
+                        Constructor<Command> cons = clazz.getConstructor(Bot.class);
+                        addCommand(bot -> {
+                            try {
+                                return cons.newInstance(bot);
+                            } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+                                logger.error("Error creating command " + classname, e);
+                                return null;
+                            }
+                        });
+                        logger.info("Added command " + classname);
+                        return;
+                    }
+                }
+
+            } catch (ClassNotFoundException e) {
+                logger.error("Cannot find class " + classname, e);
+            } catch (NoSuchMethodException e) {
+                logger.error("Failed to find the correct method in command " + classname, e);
+            }
+        });
 	}
 	
 	/**
@@ -148,6 +174,9 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 	private void addCommand(Function<Bot, Command> commandConstructor) {
 		
 		Command command = commandConstructor.apply(this);
+        if (null == command) {
+            return;
+        }
 
 		// Load any properties prefixed with this classname and apply them
 		

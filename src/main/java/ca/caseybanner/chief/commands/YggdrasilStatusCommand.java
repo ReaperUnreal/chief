@@ -110,7 +110,7 @@ public class YggdrasilStatusCommand extends Command {
      * Matches `ygg-status list` or `ygg-status status <serverName>`
      */
     private static final Pattern PATTERN = Pattern.compile(
-            "^ygg-status\\s+(?<command>list|status)((?<serverName>(\\s*.+))?$"
+            "^ygg-status\\s+(?<command>list|status)\\s*(?<serverName>.+)?$"
     );
 
     /**
