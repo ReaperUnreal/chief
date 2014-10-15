@@ -1,11 +1,7 @@
 package ca.caseybanner.chief;
 
-import ca.caseybanner.chief.commands.ConfigurationException;
-import ca.caseybanner.chief.commands.HelpCommand;
-import ca.caseybanner.chief.commands.LCBOCommand;
-import ca.caseybanner.chief.commands.MemeCommand;
-import ca.caseybanner.chief.commands.QuitCommand;
-import ca.caseybanner.chief.commands.YouTubeCommand;
+import ca.caseybanner.chief.commands.*;
+
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -140,28 +136,23 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
         Arrays.stream(commandClassnames).forEach(classname -> {
             try {
                 Class clazz = Class.forName(classname);
-                Class[] interfaces = clazz.getInterfaces();
-
-                for (Class c : interfaces) {
-                    if (c == Command.class) {
-                        Constructor<Command> cons = clazz.getConstructor(Bot.class);
-                        addCommand(bot -> {
-                            try {
-                                return cons.newInstance(bot);
-                            } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-                                logger.error("Error creating command " + classname, e);
-                                return null;
-                            }
-                        });
-                        logger.info("Added command " + classname);
-                        return;
+                Class[] classes = clazz.getClasses();
+                Constructor<Command> cons = clazz.getConstructor(Bot.class);
+                addCommand(bot -> {
+                    try {
+                        return cons.newInstance(bot);
+                    } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+                        logger.error("Error creating command " + classname, e);
+                        return null;
                     }
-                }
-
+                });
+                logger.info("Added command " + classname);
             } catch (ClassNotFoundException e) {
                 logger.error("Cannot find class " + classname, e);
             } catch (NoSuchMethodException e) {
                 logger.error("Failed to find the correct method in command " + classname, e);
+            } catch (Exception e) {
+                logger.error("Unknown error creating command " + classname, e);
             }
         });
 	}

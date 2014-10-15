@@ -128,7 +128,7 @@ public class YggdrasilStatusCommand extends Command {
      *
      * @param bot the Bot this command belongs to
      */
-    protected YggdrasilStatusCommand(Bot bot) {
+    public YggdrasilStatusCommand(Bot bot) {
         super(bot);
 
         servers = new HashMap<>();
