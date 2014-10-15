@@ -8,6 +8,8 @@ package ca.caseybanner.chief.commands;
 
 import ca.caseybanner.chief.Bot;
 import ca.caseybanner.chief.Command;
+import ca.caseybanner.chief.SynchronousCommand;
+
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,7 +18,7 @@ import java.util.regex.Pattern;
  *
  * @author kcbanner
  */
-public class QuitCommand extends Command {
+public class QuitCommand extends SynchronousCommand {
 
 	private static final Pattern PATTERN = Pattern.compile("^quit$");
 	

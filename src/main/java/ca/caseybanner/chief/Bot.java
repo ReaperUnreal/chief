@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -355,8 +356,13 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 					if (command.isAdminOnly() && ! isAdmin) {
 						response = Optional.of("This is an admin only command. Get out.");
 					} else {
-						response = command.processMessage(
-								fromJID, message.getBody(), matcher, fromRoom);						
+                        try {
+                            response = command.processAsyncMessage(
+                                    fromJID, message.getBody(), matcher, fromRoom).get();
+                        } catch (ExecutionException | InterruptedException e) {
+                            logger.error("Failed to process command: " + body, e);
+                            return Optional.empty();
+                        }
 					}
 					
 					break;

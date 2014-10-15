@@ -8,6 +8,7 @@ package ca.caseybanner.chief.commands;
 
 import ca.caseybanner.chief.Bot;
 import ca.caseybanner.chief.Command;
+import ca.caseybanner.chief.SynchronousCommand;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -27,7 +28,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author kcbanner
  */
-public class YouTubeCommand extends Command {
+public class YouTubeCommand extends SynchronousCommand {
 
 	private static final Logger logger = LogManager.getLogger(YouTubeCommand.class);
 

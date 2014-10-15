@@ -8,6 +8,7 @@ package ca.caseybanner.chief;
 
 import ca.caseybanner.chief.commands.ConfigurationException;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,20 +50,19 @@ public abstract class Command {
 	 * 
 	 * @return pattern used to match against incoming messages
 	 */
-	public abstract Pattern getPattern();	
+	public abstract Pattern getPattern();
 
-	/**
-	 * Process a message and optionally return a response. 
-	 * 
-	 * @param from the nickname the chat was from
-	 * @param message the message itself
-	 * @param matcher the matcher created by pattern returned by getPattern(), 
-	 *	               already run on the message
-	 * @param fromRoom whether or not this message come from a room
-	 * @return optional response to the message
-	 */
-	public abstract Optional<String> processMessage(
-			String from, String message, Matcher matcher, boolean fromRoom);
+    /**
+     * Possibly async processing
+     *
+     * @param from
+     * @param message
+     * @param matcher
+     * @param fromRoom
+     * @return
+     */
+    public abstract CompletableFuture<Optional<String>> processAsyncMessage(
+            String from, String message, Matcher matcher, boolean fromRoom);
 	
 	/**
 	 * Called when all configuration properties have been set.
@@ -83,5 +83,25 @@ public abstract class Command {
 	public boolean isAdminOnly() {
 		return false;
 	}
+
+    /**
+     * Helper to convert an optional<string> into a completed future with that value
+     *
+     * @param value
+     * @return
+     */
+    public static CompletableFuture<Optional<String>> toFuture(Optional<String> value) {
+        return CompletableFuture.completedFuture(value);
+    }
+
+    /**
+     * Helper to create a completed future from a string value
+     *
+     * @param value
+     * @return
+     */
+    public static CompletableFuture<Optional<String>> toFuture(String value) {
+        return toFuture(Optional.of(value));
+    }
 	
 }

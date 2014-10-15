@@ -2,6 +2,7 @@ package ca.caseybanner.chief.commands;
 
 import ca.caseybanner.chief.Bot;
 import ca.caseybanner.chief.Command;
+import ca.caseybanner.chief.SynchronousCommand;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
@@ -25,7 +26,7 @@ import org.apache.logging.log4j.Logger;
  * 
  * @author kcbanner
  */
-public class LCBOCommand extends Command {
+public class LCBOCommand extends SynchronousCommand {
 
 	private static final Logger logger = LogManager.getLogger(LCBOCommand.class);			
 	

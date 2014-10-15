@@ -8,6 +8,8 @@ package ca.caseybanner.chief.commands;
 
 import ca.caseybanner.chief.Bot;
 import ca.caseybanner.chief.Command;
+import ca.caseybanner.chief.SynchronousCommand;
+
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,7 +18,7 @@ import java.util.regex.Pattern;
  *
  * @author kcbanner
  */
-public class HelpCommand extends Command {
+public class HelpCommand extends SynchronousCommand {
 	
 	private static final Pattern PATTERN = Pattern.compile("^help");
 	private static final String USAGE_HEADER = "Chief Bot Usage:\n";

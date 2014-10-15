@@ -2,6 +2,7 @@ package ca.caseybanner.chief.commands;
 
 import ca.caseybanner.chief.Bot;
 import ca.caseybanner.chief.Command;
+import ca.caseybanner.chief.SynchronousCommand;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpRequest;
@@ -25,7 +26,7 @@ import org.apache.logging.log4j.Logger;
  * 
  * @author kcbanner
  */
-public class MemeCommand extends Command {
+public class MemeCommand extends SynchronousCommand {
 
 	private static final Logger logger = LogManager.getLogger(MemeCommand.class);
 	
