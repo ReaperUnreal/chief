@@ -11,8 +11,8 @@ package ca.caseybanner.chief.commands;
  */
 public class ConfigurationException extends Exception {
 
-    public ConfigurationException(String message) {
-        super(message);
-    }
+	public ConfigurationException(String message) {
+		super(message);
+	}
 
 }
