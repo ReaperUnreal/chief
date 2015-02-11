@@ -80,7 +80,8 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 			"username",
 			"password",
 			"conferenceHost",
-			"commands"
+			"commands",
+			"resources"
 	);
 
 	/**
