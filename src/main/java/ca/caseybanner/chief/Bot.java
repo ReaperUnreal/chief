@@ -2,10 +2,14 @@ package ca.caseybanner.chief;
 
 import ca.caseybanner.chief.commands.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,6 +24,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import ca.caseybanner.chief.util.DynamicURLClassLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jivesoftware.smack.*;
@@ -104,7 +110,6 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
         config.setSecurityMode(ConnectionConfiguration.SecurityMode.required);
 		
 		// Load admins
-		
 		String adminsString = properties.getProperty("admins");
 		if (adminsString == null) {
 			admins = Collections.emptyList();
@@ -113,7 +118,6 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 		}
 		
 		// Load rooms
-		
 		String roomsString = properties.getProperty("rooms");
 		if (roomsString == null) {
 			rooms = Collections.emptyList();
@@ -125,8 +129,21 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 		connection = new XMPPTCPConnection(config);		
 		connection.addConnectionListener(this);
 
+		// Load external jars
+		URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
+		DynamicURLClassLoader classLoader = new DynamicURLClassLoader(urlClassLoader);
+		String[] resourcePaths = properties.getProperty("resources").split("\\s*,\\s*");
+		for (String path : resourcePaths) {
+			try {
+				File resourceFile = new File(path);
+				logger.trace(resourceFile.getAbsolutePath());
+				classLoader.addURL(resourceFile.toURI().toURL());
+			} catch (MalformedURLException e) {
+				logger.error("Invalid resource path: " + path, e);
+			}
+		}
+
 		// Add some default commands
-		
 		commands = new ArrayList<>();
 
         addCommand(HelpCommand::new);
@@ -135,8 +152,7 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 		String[] commandClassnames = properties.getProperty("commands").split("\\s*,\\s*");
         Arrays.stream(commandClassnames).forEach(classname -> {
             try {
-                Class clazz = Class.forName(classname);
-                Class[] classes = clazz.getClasses();
+				Class clazz = classLoader.loadClass(classname);
                 Constructor<Command> cons = clazz.getConstructor(Bot.class);
                 addCommand(bot -> {
                     try {

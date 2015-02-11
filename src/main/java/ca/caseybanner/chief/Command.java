@@ -53,7 +53,8 @@ public abstract class Command {
 	public abstract Pattern getPattern();
 
     /**
-     * Possibly async processing
+     * Possibly async processing.  If the optional is present it should contain the text result to be
+	 * sent as a message representing the result of the command.
      *
      * @param from
      * @param message
@@ -90,7 +91,7 @@ public abstract class Command {
      * @param value
      * @return
      */
-    public static CompletableFuture<Optional<String>> toFuture(Optional<String> value) {
+    protected static CompletableFuture<Optional<String>> toFuture(Optional<String> value) {
         return CompletableFuture.completedFuture(value);
     }
 
@@ -100,7 +101,7 @@ public abstract class Command {
      * @param value
      * @return
      */
-    public static CompletableFuture<Optional<String>> toFuture(String value) {
+	protected static CompletableFuture<Optional<String>> toFuture(String value) {
         return toFuture(Optional.of(value));
     }
 	
