@@ -183,10 +183,10 @@ public class YggdrasilStatusCommand extends Command {
     /**
      * Process a message
      *
-     * @param from the nickname the chat was from
-     * @param message the message itself
-     * @param matcher the matcher created by pattern returned by getPattern(),
-     *	               already run on the message
+     * @param from     the nickname the chat was from
+     * @param message  the message itself
+     * @param matcher  the matcher created by pattern returned by getPattern(),
+     *                 already run on the message
      * @param fromRoom whether or not this message come from a room
      * @return
      */
@@ -203,7 +203,7 @@ public class YggdrasilStatusCommand extends Command {
                     return toFuture("Please provide a server name");
                 }
 
-                if (! servers.containsKey(serverName)) {
+                if (!servers.containsKey(serverName)) {
                     return toFuture("Cannot find a server by the name " + serverName);
                 }
 

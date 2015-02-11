@@ -15,38 +15,37 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- *
  * @author kcbanner
  */
 public class QuitCommand extends SynchronousCommand {
 
-	private static final Pattern PATTERN = Pattern.compile("^quit$");
-	
-	public QuitCommand(Bot bot) {
-		super(bot);
-	}
+    private static final Pattern PATTERN = Pattern.compile("^quit$");
 
-	@Override
-	public String getUsage() {
-		return "quit - causes the bot to shutdown";
-	}
+    public QuitCommand(Bot bot) {
+        super(bot);
+    }
 
-	@Override
-	public Pattern getPattern() {
-		return PATTERN;
-	}
+    @Override
+    public String getUsage() {
+        return "quit - causes the bot to shutdown";
+    }
 
-	@Override
-	public Optional<String> processMessage(
-			String from, String message, Matcher matcher, boolean fromRoom) {		
-		
-		getBot().exit();		
-		return Optional.empty();
-	}
+    @Override
+    public Pattern getPattern() {
+        return PATTERN;
+    }
 
-	@Override
-	public boolean isAdminOnly() {
-		return true;
-	}
-	
+    @Override
+    public Optional<String> processMessage(
+            String from, String message, Matcher matcher, boolean fromRoom) {
+
+        getBot().exit();
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean isAdminOnly() {
+        return true;
+    }
+
 }
