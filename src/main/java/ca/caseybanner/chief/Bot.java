@@ -24,6 +24,7 @@ import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.ping.PingManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -140,6 +141,13 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 		multiUserChatsByRoom = new ConcurrentHashMap<>();
 		connection = new XMPPTCPConnection(config);
 		connection.addConnectionListener(this);
+
+		PingManager pingManager = PingManager.getInstanceFor(connection);
+		pingManager.setPingInterval(15);
+		pingManager.registerPingFailedListener(() -> {
+			logger.warn("Ping failed");
+			pingManager.setPingInterval(15);
+		});
 
 		// Load external jars
 		URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
