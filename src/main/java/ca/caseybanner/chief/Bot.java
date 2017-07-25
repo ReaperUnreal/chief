@@ -50,7 +50,6 @@ import java.util.regex.Pattern;
 
 /**
  * The Bot!
- * <p/>
  * Created by kcbanner on 7/24/2014.
  */
 public class Bot implements ChatManagerListener, MessageListener, ConnectionListener {
@@ -107,13 +106,13 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 			}
 		}
 
-		String host = properties.getProperty("host");
-		int port = Integer.parseInt(properties.getProperty("port"));
-		this.username = properties.getProperty("username");
-		this.password = properties.getProperty("password");
-		this.conferenceHost = properties.getProperty("conferenceHost");
+		String host = properties.getProperty("hipchat.host");
+		int port = Integer.parseInt(properties.getProperty("hipchat.port"));
+		this.username = properties.getProperty("hipchat.username");
+		this.password = properties.getProperty("hipchat.password");
+		this.conferenceHost = properties.getProperty("hipchat.conferenceHost");
 
-		this.nickname = properties.getProperty("nickname", "Chief Bot");
+		this.nickname = properties.getProperty("hipchat.nickname", "Chief Bot");
 		this.roomPrefixPattern = Pattern.compile(properties.getProperty(
 				"roomPrefix", "^!\\s*"));
 
@@ -123,7 +122,7 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 		config.setSecurityMode(ConnectionConfiguration.SecurityMode.required);
 
 		// Load admins
-		String adminsString = properties.getProperty("admins");
+		String adminsString = properties.getProperty("hipchat.admins");
 		if (adminsString == null) {
 			admins = Collections.emptyList();
 		} else {
@@ -131,7 +130,7 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 		}
 
 		// Load rooms
-		String roomsString = properties.getProperty("rooms");
+		String roomsString = properties.getProperty("hipchat.rooms");
 		if (roomsString == null) {
 			rooms = Collections.emptyList();
 		} else {
@@ -187,8 +186,8 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 				logger.error("Cannot find class " + classname, e);
 			} catch (NoSuchMethodException e) {
 				logger.error("Failed to find the correct method in command " + classname, e);
-			} catch (Exception e) {
-				logger.error("Unknown error creating command " + classname, e);
+			} catch (SecurityException e) {
+				logger.error("Security exception creating " + classname, e);
 			}
 		});
 	}
@@ -531,6 +530,8 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 	/**
 	 * Called when a new chat is created with the bot
 	 *
+	 * @param chat
+	 * @param createdLocally
 	 * @see org.jivesoftware.smack.ChatManagerListener
 	 */
 	@Override
@@ -542,6 +543,8 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 	}
 
 	/**
+	 * @param chat
+	 * @param message
 	 * @see org.jivesoftware.smack.MessageListener
 	 */
 	@Override
