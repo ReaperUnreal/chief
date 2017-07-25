@@ -1,7 +1,6 @@
 package ca.caseybanner.chief.bots;
 
 import ca.caseybanner.chief.Command;
-import ca.caseybanner.chief.commands.CommandAdder;
 import ca.caseybanner.chief.commands.ConfigurationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,8 +33,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -47,7 +50,9 @@ import java.util.regex.Pattern;
  * The HipChatBot!
  Created by kcbanner on 7/24/2014.
  */
-public class HipChatBot implements ChatManagerListener, MessageListener, ConnectionListener, CommandAdder, BotInterface {
+public class HipChatBot implements ChatManagerListener, MessageListener, ConnectionListener, BotInterface {
+	
+	private final ExecutorService threadPool = Executors.newFixedThreadPool(2);
 
 	private static final Logger logger = LogManager.getLogger(HipChatBot.class);
 
@@ -65,6 +70,8 @@ public class HipChatBot implements ChatManagerListener, MessageListener, Connect
 
 	private final ConcurrentHashMap<String, MultiUserChat> multiUserChatsByRoom;
 	private final List<Command> commands;
+	
+	private CompletableFuture<Boolean> exitFuture;
 
 	/**
 	 * List of properties that are required
@@ -225,6 +232,7 @@ public class HipChatBot implements ChatManagerListener, MessageListener, Connect
 	/**
 	 * Connect to the server
 	 */
+	@Override
 	public void start() {
 		try {
 			connection.connect();
@@ -241,6 +249,12 @@ public class HipChatBot implements ChatManagerListener, MessageListener, Connect
 			roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all);
 
 			rooms.stream().forEach(this::joinRoom);
+			
+			exitFuture = makeCompletableFuture(threadPool.submit(() -> {
+				running.await();
+				connection.disconnect();
+				return false;
+			}));
 
 		} catch (XMPPException e) {
 			throw new RuntimeException("XMPP Error", e);
@@ -253,19 +267,29 @@ public class HipChatBot implements ChatManagerListener, MessageListener, Connect
 	}
 
 	/**
-	 * Waits until the bot exits before returning
+	 * Convert a future to a completable future.
+	 * 
+	 * @param <T>
+	 * @param future
+	 * @return The completable future.
 	 */
-	public void waitForExit() {
+	private static <T> CompletableFuture<T> makeCompletableFuture(Future<T> future) {
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return future.get();
+			} catch (InterruptedException | ExecutionException e) {
+				throw new RuntimeException(e);
+			}
+		});
+	}
 
-		lock.lock();
-		try {
-			running.await();
-			connection.disconnect();
-		} catch (InterruptedException | SmackException.NotConnectedException ignored) {
-
-		} finally {
-			lock.unlock();
-		}
+	/**
+	 * Returns a future that will complete when the bot shuts down.
+	 * @return 
+	 */
+	@Override
+	public CompletableFuture<Boolean> waitForExit() {
+		return exitFuture;
 	}
 
 	/**

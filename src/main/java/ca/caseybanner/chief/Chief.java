@@ -20,7 +20,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * The main entry point for the Chief bot
@@ -58,7 +60,7 @@ class Chief {
 			try {
 				@SuppressWarnings("unchecked")
 				Class<? extends Command> clazz = (Class<? extends Command>)classLoader.loadClass(classname);
-				Constructor<? extends Command> cons = clazz.getConstructor(HipChatBot.class);
+				Constructor<? extends Command> cons = clazz.getConstructor(BotInterface.class);
 				commandConstructors.add(bot -> {
 					try {
 						return cons.newInstance(bot);
@@ -80,6 +82,7 @@ class Chief {
 		return commandConstructors;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static void main(String[] args) {
 
 		logger.info("Chief is starting");
@@ -95,18 +98,33 @@ class Chief {
 		
 		List<Function<BotInterface, Command>> commands = loadCommands(properties);
 
+		List<BotInterface> botInterfaces = new ArrayList<>();
 		if (HipChatBot.hasRequiredProperties(properties)) {
 			logger.info("Creating HipChat Bot");
 			HipChatBot hipChatBot = new HipChatBot(properties);
-			commands.forEach(hipChatBot::addCommand);
-			hipChatBot.start();
-			hipChatBot.waitForExit();
+			botInterfaces.add(hipChatBot);
 		} else {
 			logger.info("Cannot create HipChat Bot, properties not present.");
 		}
-
-		logger.info("Chief exiting");
-		System.exit(0);
+		
+		List<CompletableFuture<Boolean>> exitFutures = botInterfaces.stream().map(bot -> {
+			commands.forEach(bot::addCommand);
+			bot.start();
+			return bot.waitForExit();
+		}).collect(Collectors.toList());
+		
+		// make sure exit still works
+		if (exitFutures.isEmpty()) {
+			exitFutures.add(CompletableFuture.completedFuture(true));
+		}
+		CompletableFuture.anyOf(exitFutures.toArray(new CompletableFuture<?>[exitFutures.size()])).whenComplete((result, throwable) -> {
+			if (throwable != null) {
+				logger.error("Error exiting chief: " + throwable.getLocalizedMessage());
+				System.exit(1);
+			}
+			logger.info("Chief exiting");
+			System.exit(0);
+		});
 
 	}
 
