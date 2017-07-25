@@ -16,7 +16,6 @@ import java.net.MalformedURLException;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
@@ -37,8 +36,8 @@ class Chief {
 		// Load external jars
 		URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
 		DynamicURLClassLoader classLoader = new DynamicURLClassLoader(urlClassLoader);
-		String[] resourcePaths = properties.getProperty("resources", "").split("\\s*,\\s*");
-		for (String path : resourcePaths) {
+		Arrays.stream(properties.getProperty("resources", "").split("\\s*,\\s*"))
+				.filter(path -> !path.isEmpty()).forEach(path -> {
 			try {
 				File resourceFile = new File(path);
 				logger.trace(resourceFile.getAbsolutePath());
@@ -46,13 +45,14 @@ class Chief {
 			} catch (MalformedURLException e) {
 				logger.error("Invalid resource path: " + path, e);
 			}
-		}
+		});
 		
 		// add the default commands
 		commandConstructors.add(HelpCommand::new);
 		commandConstructors.add(QuitCommand::new);
 		String[] commandClassnames = properties.getProperty("commands", "").split("\\s*,\\s*");
-		Arrays.stream(commandClassnames).forEach(classname -> {
+		Arrays.stream(commandClassnames)
+				.filter(classname -> !classname.isEmpty()).forEach(classname -> {
 			try {
 				@SuppressWarnings("unchecked")
 				Class<? extends Command> clazz = (Class<? extends Command>)classLoader.loadClass(classname);
