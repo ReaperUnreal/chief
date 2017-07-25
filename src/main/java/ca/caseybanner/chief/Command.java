@@ -6,6 +6,7 @@
 
 package ca.caseybanner.chief;
 
+import ca.caseybanner.chief.bots.BotInterface;
 import ca.caseybanner.chief.commands.ConfigurationException;
 
 import java.util.Optional;
@@ -18,23 +19,23 @@ import java.util.regex.Pattern;
  */
 public abstract class Command {
 
-	private final HipChatBot bot;
+	private final BotInterface bot;
 
 	/**
 	 * Constructor
 	 *
-	 * @param bot the HipChatBot this command belongs to
+	 * @param bot the bot this command belongs to
 	 */
-	protected Command(HipChatBot bot) {
+	protected Command(BotInterface bot) {
 		this.bot = bot;
 	}
 
 	/**
 	 * Getter for the bot this command belongs to
 	 *
-	 * @return the HipChatBot instance
+	 * @return the bot instance
 	 */
-	protected HipChatBot getBot() {
+	protected BotInterface getBot() {
 		return bot;
 	}
 

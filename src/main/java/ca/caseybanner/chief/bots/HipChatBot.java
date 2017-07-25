@@ -1,5 +1,6 @@
-package ca.caseybanner.chief;
+package ca.caseybanner.chief.bots;
 
+import ca.caseybanner.chief.Command;
 import ca.caseybanner.chief.commands.CommandAdder;
 import ca.caseybanner.chief.commands.ConfigurationException;
 import org.apache.logging.log4j.LogManager;
@@ -46,7 +47,7 @@ import java.util.regex.Pattern;
  * The HipChatBot!
  Created by kcbanner on 7/24/2014.
  */
-public class HipChatBot implements ChatManagerListener, MessageListener, ConnectionListener, CommandAdder {
+public class HipChatBot implements ChatManagerListener, MessageListener, ConnectionListener, CommandAdder, BotInterface {
 
 	private static final Logger logger = LogManager.getLogger(HipChatBot.class);
 
@@ -152,7 +153,7 @@ public class HipChatBot implements ChatManagerListener, MessageListener, Connect
 	 * @param commandConstructor the constructor of a Command to add
 	 */
 	@Override
-	public void addCommand(Function<HipChatBot, Command> commandConstructor) {
+	public void addCommand(Function<BotInterface, Command> commandConstructor) {
 
 		Command command = commandConstructor.apply(this);
 		if (null == command) {
@@ -214,6 +215,7 @@ public class HipChatBot implements ChatManagerListener, MessageListener, Connect
 	 *
 	 * @return list of Commands
 	 */
+	@Override
 	public List<Command> getCommands() {
 
 		return Collections.unmodifiableList(commands);
@@ -270,6 +272,7 @@ public class HipChatBot implements ChatManagerListener, MessageListener, Connect
 	 * Tell the bot to shutdown.
 	 * This will cause the call to waitForExit to return.
 	 */
+	@Override
 	public void exit() {
 		lock.lock();
 

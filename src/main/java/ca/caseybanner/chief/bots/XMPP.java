@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package ca.caseybanner.chief;
+package ca.caseybanner.chief.bots;
 
 /**
  * XMPP utilities

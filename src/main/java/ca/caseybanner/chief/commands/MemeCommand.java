@@ -1,7 +1,7 @@
 package ca.caseybanner.chief.commands;
 
-import ca.caseybanner.chief.HipChatBot;
 import ca.caseybanner.chief.SynchronousCommand;
+import ca.caseybanner.chief.bots.BotInterface;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpRequest;
@@ -151,7 +151,7 @@ public class MemeCommand extends SynchronousCommand {
 	 * @param bot
 	 * @see ca.caseybanner.chief.Command
 	 */
-	public MemeCommand(HipChatBot bot) {
+	public MemeCommand(BotInterface bot) {
 		super(bot);
 
 		jsonFactory = new JacksonFactory();

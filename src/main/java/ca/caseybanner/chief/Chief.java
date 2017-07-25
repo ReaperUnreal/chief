@@ -1,5 +1,7 @@
 package ca.caseybanner.chief;
 
+import ca.caseybanner.chief.bots.BotInterface;
+import ca.caseybanner.chief.bots.HipChatBot;
 import ca.caseybanner.chief.commands.HelpCommand;
 import ca.caseybanner.chief.commands.QuitCommand;
 import ca.caseybanner.chief.util.DynamicURLClassLoader;
@@ -30,8 +32,8 @@ class Chief {
 	private static final Logger logger = LogManager.getLogger(Chief.class);
 	private static final String PROPERTIES_FILENAME = "config/chief.properties";
 	
-	private static List<Function<HipChatBot, Command>> loadCommands(Properties properties) {
-		List<Function<HipChatBot, Command>> commandConstructors = new ArrayList<>();
+	private static List<Function<BotInterface, Command>> loadCommands(Properties properties) {
+		List<Function<BotInterface, Command>> commandConstructors = new ArrayList<>();
 		
 		// Load external jars
 		URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
@@ -91,7 +93,7 @@ class Chief {
 			System.exit(1);
 		}
 		
-		List<Function<HipChatBot, Command>> commands = loadCommands(properties);
+		List<Function<BotInterface, Command>> commands = loadCommands(properties);
 
 		if (HipChatBot.hasRequiredProperties(properties)) {
 			logger.info("Creating HipChat Bot");

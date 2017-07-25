@@ -6,8 +6,8 @@
 
 package ca.caseybanner.chief.commands;
 
-import ca.caseybanner.chief.HipChatBot;
 import ca.caseybanner.chief.SynchronousCommand;
+import ca.caseybanner.chief.bots.BotInterface;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -20,7 +20,7 @@ public class QuitCommand extends SynchronousCommand {
 
 	private static final Pattern PATTERN = Pattern.compile("^quit$");
 
-	public QuitCommand(HipChatBot bot) {
+	public QuitCommand(BotInterface bot) {
 		super(bot);
 	}
 

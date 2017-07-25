@@ -1,7 +1,7 @@
 package ca.caseybanner.chief.commands;
 
 import ca.caseybanner.chief.Command;
-import ca.caseybanner.chief.HipChatBot;
+import ca.caseybanner.chief.bots.BotInterface;
 import java.util.function.Function;
 
 /**
@@ -10,5 +10,5 @@ import java.util.function.Function;
  * @author gcl
  */
 public interface CommandAdder {
-	public void addCommand(Function<HipChatBot, Command> commandConstructor);
+	public void addCommand(Function<BotInterface, Command> commandConstructor);
 }

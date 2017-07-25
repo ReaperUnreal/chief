@@ -1,5 +1,6 @@
 package ca.caseybanner.chief;
 
+import ca.caseybanner.chief.bots.BotInterface;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
@@ -11,9 +12,9 @@ public abstract class SynchronousCommand extends Command {
 	/**
 	 * Constructor
 	 *
-	 * @param bot the HipChatBot this command belongs to
+	 * @param bot the bot this command belongs to
 	 */
-	protected SynchronousCommand(HipChatBot bot) {
+	protected SynchronousCommand(BotInterface bot) {
 		super(bot);
 	}
 

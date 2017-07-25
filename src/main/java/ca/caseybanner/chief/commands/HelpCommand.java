@@ -6,8 +6,8 @@
 
 package ca.caseybanner.chief.commands;
 
-import ca.caseybanner.chief.HipChatBot;
 import ca.caseybanner.chief.SynchronousCommand;
+import ca.caseybanner.chief.bots.BotInterface;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -21,7 +21,7 @@ public class HelpCommand extends SynchronousCommand {
 	private static final Pattern PATTERN = Pattern.compile("^help");
 	private static final String USAGE_HEADER = "Chief Bot Usage:\n";
 
-	public HelpCommand(HipChatBot bot) {
+	public HelpCommand(BotInterface bot) {
 		super(bot);
 	}
 
