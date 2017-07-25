@@ -6,7 +6,7 @@
 
 package ca.caseybanner.chief.commands;
 
-import ca.caseybanner.chief.Bot;
+import ca.caseybanner.chief.HipChatBot;
 import ca.caseybanner.chief.SynchronousCommand;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -35,7 +35,7 @@ public class YouTubeCommand extends SynchronousCommand {
 	private final YouTube youtube;
 	private String apiKey;
 
-	public YouTubeCommand(Bot bot) {
+	public YouTubeCommand(HipChatBot bot) {
 		super(bot);
 
 		youtube = new YouTube.Builder(

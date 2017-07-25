@@ -1,6 +1,6 @@
 package ca.caseybanner.chief.commands;
 
-import ca.caseybanner.chief.Bot;
+import ca.caseybanner.chief.HipChatBot;
 import ca.caseybanner.chief.SynchronousCommand;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
@@ -280,7 +280,7 @@ public class LCBOCommand extends SynchronousCommand {
 
 	}
 
-	public LCBOCommand(Bot bot) {
+	public LCBOCommand(HipChatBot bot) {
 
 		super(bot);
 

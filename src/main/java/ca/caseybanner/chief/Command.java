@@ -18,23 +18,23 @@ import java.util.regex.Pattern;
  */
 public abstract class Command {
 
-	private final Bot bot;
+	private final HipChatBot bot;
 
 	/**
 	 * Constructor
 	 *
-	 * @param bot the Bot this command belongs to
+	 * @param bot the HipChatBot this command belongs to
 	 */
-	protected Command(Bot bot) {
+	protected Command(HipChatBot bot) {
 		this.bot = bot;
 	}
 
 	/**
 	 * Getter for the bot this command belongs to
 	 *
-	 * @return the Bot instance
+	 * @return the HipChatBot instance
 	 */
-	protected Bot getBot() {
+	protected HipChatBot getBot() {
 		return bot;
 	}
 

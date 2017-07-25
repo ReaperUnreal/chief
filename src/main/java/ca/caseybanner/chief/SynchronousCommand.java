@@ -11,9 +11,9 @@ public abstract class SynchronousCommand extends Command {
 	/**
 	 * Constructor
 	 *
-	 * @param bot the Bot this command belongs to
+	 * @param bot the HipChatBot this command belongs to
 	 */
-	protected SynchronousCommand(Bot bot) {
+	protected SynchronousCommand(HipChatBot bot) {
 		super(bot);
 	}
 

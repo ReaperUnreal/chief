@@ -1,9 +1,7 @@
 package ca.caseybanner.chief;
 
+import ca.caseybanner.chief.commands.CommandAdder;
 import ca.caseybanner.chief.commands.ConfigurationException;
-import ca.caseybanner.chief.commands.HelpCommand;
-import ca.caseybanner.chief.commands.QuitCommand;
-import ca.caseybanner.chief.util.DynamicURLClassLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jivesoftware.smack.Chat;
@@ -26,13 +24,9 @@ import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.ping.PingManager;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,12 +43,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The Bot!
- * Created by kcbanner on 7/24/2014.
+ * The HipChatBot!
+ Created by kcbanner on 7/24/2014.
  */
-public class Bot implements ChatManagerListener, MessageListener, ConnectionListener {
+public class HipChatBot implements ChatManagerListener, MessageListener, ConnectionListener, CommandAdder {
 
-	private static final Logger logger = LogManager.getLogger(Bot.class);
+	private static final Logger logger = LogManager.getLogger(HipChatBot.class);
 
 	private final Lock lock;
 	private final Condition running;
@@ -75,36 +69,36 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 	 * List of properties that are required
 	 */
 	private static final List<String> requiredProperties = Arrays.asList(
-			"host",
-			"port",
-			"username",
-			"password",
-			"conferenceHost",
-			"commands",
-			"resources"
+			"hipchat.host",
+			"hipchat.port",
+			"hipchat.username",
+			"hipchat.password",
+			"hipchat.conferenceHost",
+			"commands"
 	);
+	
+	/**
+	 * Determine if the given properties can satisfy the requirements for creating this bot.
+	 * 
+	 * @param properties
+	 * @return Whether or not the properties are present.
+	 */
+	public static boolean hasRequiredProperties(Properties properties) {
+		return requiredProperties.stream()
+				.noneMatch(requiredProperty -> properties.getProperty(requiredProperty) == null);
+	}
 
 	/**
 	 * Bot constructor
 	 *
 	 * @param properties configuration properties
-	 * @throws ca.caseybanner.chief.commands.ConfigurationException
 	 */
-	public Bot(Properties properties) throws ConfigurationException {
+	public HipChatBot(Properties properties) {
 
 		lock = new ReentrantLock();
 		running = lock.newCondition();
 
 		this.properties = properties;
-
-		// Make sure the required properties exist
-
-		for (String requiredProperty : requiredProperties) {
-			if (properties.getProperty(requiredProperty) == null) {
-				throw new ConfigurationException(
-						"Missing required configuration property: " + requiredProperty);
-			}
-		}
 
 		String host = properties.getProperty("hipchat.host");
 		int port = Integer.parseInt(properties.getProperty("hipchat.port"));
@@ -147,50 +141,9 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 			logger.warn("Ping failed");
 			pingManager.setPingInterval(15);
 		});
-
-		// Load external jars
-		URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
-		DynamicURLClassLoader classLoader = new DynamicURLClassLoader(urlClassLoader);
-		String[] resourcePaths = properties.getProperty("resources").split("\\s*,\\s*");
-		for (String path : resourcePaths) {
-			try {
-				File resourceFile = new File(path);
-				logger.trace(resourceFile.getAbsolutePath());
-				classLoader.addURL(resourceFile.toURI().toURL());
-			} catch (MalformedURLException e) {
-				logger.error("Invalid resource path: " + path, e);
-			}
-		}
-
-		// Add some default commands
+		
 		commands = new ArrayList<>();
 
-		addCommand(HelpCommand::new);
-		addCommand(QuitCommand::new);
-
-		String[] commandClassnames = properties.getProperty("commands").split("\\s*,\\s*");
-		Arrays.stream(commandClassnames).forEach(classname -> {
-			try {
-				@SuppressWarnings("unchecked")
-				Class<? extends Command> clazz = (Class<? extends Command>)classLoader.loadClass(classname);
-				Constructor<? extends Command> cons = clazz.getConstructor(Bot.class);
-				addCommand(bot -> {
-					try {
-						return cons.newInstance(bot);
-					} catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-						logger.error("Error creating command " + classname, e);
-						return null;
-					}
-				});
-				logger.info("Added command " + classname);
-			} catch (ClassNotFoundException e) {
-				logger.error("Cannot find class " + classname, e);
-			} catch (NoSuchMethodException e) {
-				logger.error("Failed to find the correct method in command " + classname, e);
-			} catch (SecurityException e) {
-				logger.error("Security exception creating " + classname, e);
-			}
-		});
 	}
 
 	/**
@@ -198,7 +151,8 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 	 *
 	 * @param commandConstructor the constructor of a Command to add
 	 */
-	private void addCommand(Function<Bot, Command> commandConstructor) {
+	@Override
+	public void addCommand(Function<HipChatBot, Command> commandConstructor) {
 
 		Command command = commandConstructor.apply(this);
 		if (null == command) {
