@@ -171,8 +171,9 @@ public class Bot implements ChatManagerListener, MessageListener, ConnectionList
 		String[] commandClassnames = properties.getProperty("commands").split("\\s*,\\s*");
 		Arrays.stream(commandClassnames).forEach(classname -> {
 			try {
-				Class clazz = classLoader.loadClass(classname);
-				Constructor<Command> cons = clazz.getConstructor(Bot.class);
+				@SuppressWarnings("unchecked")
+				Class<? extends Command> clazz = (Class<? extends Command>)classLoader.loadClass(classname);
+				Constructor<? extends Command> cons = clazz.getConstructor(Bot.class);
 				addCommand(bot -> {
 					try {
 						return cons.newInstance(bot);
