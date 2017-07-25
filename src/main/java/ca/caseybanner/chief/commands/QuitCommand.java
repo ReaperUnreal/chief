@@ -47,4 +47,8 @@ public class QuitCommand extends SynchronousCommand {
 		return true;
 	}
 
+	@Override
+	public void configurationComplete() throws ConfigurationException {
+	}
+
 }

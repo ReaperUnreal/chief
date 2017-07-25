@@ -42,6 +42,10 @@ public class LCBOCommand extends SynchronousCommand {
 	private final JacksonFactory jsonFactory;
 	private final HttpRequestFactory requestFactory;
 
+	@Override
+	public void configurationComplete() throws ConfigurationException {
+	}
+
 	public static class LCBOPager {
 
 		@Key
@@ -162,7 +166,7 @@ public class LCBOCommand extends SynchronousCommand {
 
 			if (!Data.isNull(alcohol_content)) {
 				builder.append("  Alchohol content: ")
-						.append((float) alcohol_content / 100.0)
+						.append(alcohol_content / 100.0)
 						.append("%\n");
 			}
 

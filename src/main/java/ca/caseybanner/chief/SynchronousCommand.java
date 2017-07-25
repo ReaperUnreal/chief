@@ -39,6 +39,7 @@ public abstract class SynchronousCommand extends Command {
 	 * @param fromRoom
 	 * @return
 	 */
+	@Override
 	public CompletableFuture<Optional<String>> processAsyncMessage(
 			String from, String message, Matcher matcher, boolean fromRoom) {
 		return toFuture(processMessage(from, message, matcher, fromRoom));

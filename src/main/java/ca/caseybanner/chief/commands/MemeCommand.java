@@ -148,6 +148,7 @@ public class MemeCommand extends SynchronousCommand {
 	/**
 	 * Constructor
 	 *
+	 * @param bot
 	 * @see ca.caseybanner.chief.Command
 	 */
 	public MemeCommand(Bot bot) {

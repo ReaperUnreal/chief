@@ -5,7 +5,6 @@ import java.net.URLClassLoader;
 
 /**
  * Helper class to expose the protected addURL method of a standard URLClassLoader
- * <p/>
  * Created by cshankland on 15-02-11.
  */
 public class DynamicURLClassLoader extends URLClassLoader {
@@ -24,6 +23,7 @@ public class DynamicURLClassLoader extends URLClassLoader {
 	 *
 	 * @param url
 	 */
+	@Override
 	public void addURL(URL url) {
 		super.addURL(url);
 	}

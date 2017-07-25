@@ -48,5 +48,9 @@ public class HelpCommand extends SynchronousCommand {
 		return Optional.of(builder.toString());
 	}
 
+	@Override
+	public void configurationComplete() throws ConfigurationException {
+	}
+
 
 }

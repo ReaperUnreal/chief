@@ -70,13 +70,10 @@ public abstract class Command {
 	 *
 	 * @throws ca.caseybanner.chief.commands.ConfigurationException
 	 */
-	public void configurationComplete() throws ConfigurationException {
-
-	}
+	public abstract void configurationComplete() throws ConfigurationException;
 
 	/**
 	 * Returns true if this is an admin only command.
-	 * <p/>
 	 * If this returns true, the command will only respond to JIDs listed in the admins list.
 	 * This includes JIDs of rooms, so entire rooms can be admins if you want.
 	 *
@@ -87,7 +84,7 @@ public abstract class Command {
 	}
 
 	/**
-	 * Helper to convert an optional<string> into a completed future with that value
+	 * Helper to convert an optional string into a completed future with that value
 	 *
 	 * @param value
 	 * @return
